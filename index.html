@@ -1,0 +1,971 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Together AI Support Engineer — Study Guide</title>
+<style>
+:root{
+  --theme-background:#ffffff;
+  --artifact-background:var(--theme-background,#ffffff);
+  --artifact-background-light:var(--theme-background-light,#f6f6f6);
+  --artifact-background-mid:var(--theme-background-mid,#f0f0f0);
+  --artifact-border-light:var(--theme-border-light,#e5e5e5);
+  --artifact-border-dark:var(--theme-border-dark,#cccccc);
+  --artifact-primary-highlight:var(--theme-primary-highlight,#1b1b1b);
+  --artifact-primary-hover:var(--theme-primary-hover,#404040);
+  --artifact-selected:var(--theme-selected,#e8e8e8);
+  --artifact-text-primary:var(--theme-text-primary,#1b1b1b);
+  --artifact-text-secondary:var(--theme-text-secondary,#727272);
+  --artifact-text-highlight:var(--theme-text-highlight,#fff8e5);
+  /* module accent (semantic, theme-aware) */
+  --accent:#343ced;
+  --accent-soft:#eef0ff;
+  --code-bg:#f4f4f6;
+  --code-text:#1b1b1b;
+  --term-bg:#fff8e5;
+}
+html[data-theme='dark']{
+  --accent-soft:#1a1f44;
+  --code-bg:#161616;
+  --code-text:#e8e8e8;
+  --term-bg:#3a3320;
+}
+/* per-module accent classes */
+.m-A{--accent:#343ced;--accent-soft:#eef0ff} html[data-theme='dark'] .m-A{--accent-soft:#1a1f44}
+.m-B{--accent:#ef601b;--accent-soft:#fdeee5} html[data-theme='dark'] .m-B{--accent-soft:#3a2113}
+.m-C{--accent:#dd2ca5;--accent-soft:#fce7f5} html[data-theme='dark'] .m-C{--accent-soft:#3a1330}
+.m-D{--accent:#82951e;--accent-soft:#f2f6e0} html[data-theme='dark'] .m-D{--accent-soft:#252b0e}
+.m-E{--accent:#cda515;--accent-soft:#fbf4d9} html[data-theme='dark'] .m-E{--accent-soft:#332a08}
+.m-F{--accent:#1b9e8a;--accent-soft:#e2f5f1} html[data-theme='dark'] .m-F{--accent-soft:#0d2e28}
+.m-G{--accent:#6b4ce6;--accent-soft:#efeafe} html[data-theme='dark'] .m-G{--accent-soft:#221842}
+.m-H{--accent:#c0392b;--accent-soft:#fbe9e7} html[data-theme='dark'] .m-H{--accent-soft:#34110d}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--artifact-background);
+  color:var(--artifact-text-primary);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.6;
+  font-size:15px;
+}
+h1,h2,h3{font-family:"DM Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-weight:500;line-height:1.25}
+code,pre,.mono{font-family:"SF Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+/* layout */
+.app{display:grid;grid-template-columns:288px minmax(0,1fr);min-height:100vh}
+.sidebar{
+  border-right:1px solid var(--artifact-border-light);
+  background:var(--artifact-background-light);
+  padding:22px 16px;
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.brand{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--artifact-text-secondary);margin-bottom:4px}
+.brand-title{font-size:18px;font-weight:500;margin:0 0 14px}
+.progress-wrap{margin:0 0 18px;padding:12px;border:1px solid var(--artifact-border-light);border-radius:10px;background:var(--artifact-background)}
+.progress-label{display:flex;justify-content:space-between;font-size:12px;color:var(--artifact-text-secondary);margin-bottom:8px}
+.progress-bar{height:6px;border-radius:999px;background:var(--artifact-selected);overflow:hidden}
+.progress-fill{height:100%;width:0;background:var(--artifact-primary-highlight);transition:width .35s ease}
+nav{display:flex;flex-direction:column;gap:2px}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 11px;border-radius:8px;cursor:pointer;
+  color:var(--artifact-text-primary);font-size:14px;
+  border:none;background:transparent;text-align:left;width:100%;
+  transition:background .15s ease,color .15s ease;
+}
+.nav-item:hover{background:var(--artifact-selected)}
+.nav-item.active{background:var(--artifact-primary-highlight);color:var(--artifact-background)}
+.nav-item.active .nav-tag{color:var(--artifact-background);border-color:var(--artifact-background)}
+.nav-tag{
+  flex:0 0 auto;width:22px;height:22px;border-radius:6px;display:grid;place-items:center;
+  font-size:12px;font-weight:600;border:1px solid var(--artifact-border-dark);
+  color:var(--artifact-text-secondary);
+}
+.nav-item .check{margin-left:auto;font-size:13px;opacity:0;transition:opacity .15s ease}
+.nav-item.read .check{opacity:1}
+.nav-item.active.read .check{opacity:1}
+
+/* main */
+.main{padding:0;max-width:1040px;margin:0 auto;width:100%}
+.mainpad{padding:34px 40px 80px}
+.module{display:none;animation:fade .35s ease}
+.module.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.mod-head{display:flex;align-items:flex-start;gap:16px;margin-bottom:8px}
+.mod-badge{
+  flex:0 0 auto;width:46px;height:46px;border-radius:12px;display:grid;place-items:center;
+  font-size:20px;font-weight:600;background:var(--accent-soft);color:var(--accent);
+}
+.mod-head h1{font-size:25px;margin:0}
+.mod-sub{color:var(--artifact-text-secondary);font-size:14px;margin-top:3px}
+
+.why{
+  border-left:3px solid var(--accent);
+  background:var(--accent-soft);
+  padding:14px 16px;border-radius:0 10px 10px 0;margin:20px 0 8px;
+}
+.why .lbl{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:4px}
+
+h2.sec{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--artifact-text-secondary);
+  margin:34px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--artifact-border-light)}
+h3.cpt{font-size:17px;margin:24px 0 6px}
+p{margin:9px 0}
+.lead{margin-top:0}
+
+/* inline code + emphasis */
+.k{background:var(--code-bg);color:var(--code-text);padding:1px 6px;border-radius:5px;font-size:13px}
+.term{font-weight:600}
+.hl{background:var(--term-bg);padding:0 4px;border-radius:4px}
+
+/* analogy callout */
+.analogy{display:flex;gap:10px;align-items:flex-start;background:var(--artifact-background-light);
+  border:1px solid var(--artifact-border-light);border-radius:10px;padding:12px 14px;margin:14px 0;font-size:14px}
+.analogy .ic{flex:0 0 auto}
+
+/* glossary */
+.glossary{display:grid;gap:0;border:1px solid var(--artifact-border-light);border-radius:10px;overflow:hidden;margin-top:6px}
+.gl-row{display:grid;grid-template-columns:200px 1fr;gap:14px;padding:11px 14px;border-bottom:1px solid var(--artifact-border-light)}
+.gl-row:last-child{border-bottom:none}
+.gl-row:nth-child(odd){background:var(--artifact-background-light)}
+.gl-term{font-weight:600;color:var(--accent)}
+.gl-def{font-size:14px}
+
+/* Q&A accordion */
+.qa{border:1px solid var(--artifact-border-light);border-radius:10px;overflow:hidden;margin-top:6px}
+details.q{border-bottom:1px solid var(--artifact-border-light)}
+details.q:last-child{border-bottom:none}
+details.q summary{
+  list-style:none;cursor:pointer;padding:13px 16px;font-weight:500;font-size:14.5px;
+  display:flex;align-items:center;gap:10px;transition:background .15s ease;
+}
+details.q summary::-webkit-details-marker{display:none}
+details.q summary:hover{background:var(--artifact-background-light)}
+details.q summary .chev{flex:0 0 auto;color:var(--accent);transition:transform .2s ease;font-size:13px}
+details.q[open] summary .chev{transform:rotate(90deg)}
+details.q summary .qmark{flex:0 0 auto;width:20px;height:20px;border-radius:5px;background:var(--accent-soft);color:var(--accent);
+  display:grid;place-items:center;font-size:11px;font-weight:700}
+.q-body{padding:0 16px 15px 46px;font-size:14px;color:var(--artifact-text-primary)}
+.q-body p{margin:6px 0}
+
+/* cheat sheet */
+.cheat{
+  background:var(--code-bg);color:var(--code-text);
+  border:1px solid var(--artifact-border-light);border-radius:10px;
+  padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.7;margin-top:6px;
+  white-space:pre;
+}
+.cheat .cmt{color:var(--artifact-text-secondary)}
+
+pre.code{
+  background:var(--code-bg);color:var(--code-text);border:1px solid var(--artifact-border-light);
+  border-radius:10px;padding:14px 16px;overflow-x:auto;font-size:13px;line-height:1.6;margin:12px 0;
+}
+
+/* connect grid + plan */
+.link-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:8px}
+.link-card{border:1px solid var(--artifact-border-light);border-radius:10px;padding:14px 16px;background:var(--artifact-background-light);font-size:14px}
+.link-card b{color:var(--accent)}
+.weeks{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:8px}
+.week{border:1px solid var(--artifact-border-light);border-radius:10px;padding:14px 16px}
+.week .wk{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--artifact-text-secondary);font-weight:600;margin-bottom:6px}
+.posline{border-left:3px solid var(--accent);background:var(--accent-soft);padding:14px 18px;border-radius:0 10px 10px 0;margin-top:10px;font-size:15px}
+
+.foot-nav{display:flex;justify-content:space-between;gap:12px;margin-top:46px;padding-top:20px;border-top:1px solid var(--artifact-border-light)}
+.foot-btn{border:1px solid var(--artifact-border-dark);background:var(--artifact-background);color:var(--artifact-text-primary);
+  border-radius:8px;padding:10px 16px;font-size:14px;cursor:pointer;transition:background .15s ease;max-width:48%}
+.foot-btn:hover{background:var(--artifact-selected)}
+.foot-btn:disabled{opacity:.4;cursor:default}
+.foot-btn .dir{color:var(--artifact-text-secondary);font-size:12px;display:block}
+.foot-btn.next{text-align:right;margin-left:auto}
+
+.read-toggle{display:inline-flex;align-items:center;gap:9px;margin-top:24px;padding:9px 14px;border:1px solid var(--artifact-border-dark);
+  border-radius:8px;background:var(--artifact-background);cursor:pointer;font-size:14px;transition:background .15s ease}
+.read-toggle:hover{background:var(--artifact-selected)}
+.read-toggle .box{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--artifact-border-dark);display:grid;place-items:center;font-size:12px;color:var(--artifact-background)}
+.read-toggle.on .box{background:var(--accent);border-color:var(--accent)}
+.read-toggle.on{border-color:var(--accent);color:var(--accent)}
+
+/* mobile */
+@media screen and (max-width:860px){
+  .app{grid-template-columns:1fr}
+  .sidebar{position:static;height:auto;border-right:none;border-bottom:1px solid var(--artifact-border-light)}
+  .mainpad{padding:24px 20px 70px}
+  .gl-row{grid-template-columns:1fr;gap:3px}
+}
+
+@media print{
+  body{margin:0;padding:.4in .6in;background:#fff;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .sidebar,.foot-nav,.read-toggle{display:none!important}
+  .app{display:block}
+  .main,.mainpad{max-width:100%!important;width:100%!important;padding:0!important}
+  .module{display:block!important;page-break-before:always;animation:none!important}
+  .module:first-of-type{page-break-before:avoid}
+  details.q{break-inside:avoid}
+  details.q .q-body{display:block!important}
+  .why,.link-card,.week,.gl-row,.qa,.cheat,pre.code{break-inside:avoid}
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">Interview Prep</div>
+    <p class="brand-title">Together AI · GPU &amp; Inference Support</p>
+    <div class="progress-wrap">
+      <div class="progress-label"><span>Modules studied</span><span id="progText">0 / 8</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="progFill"></div></div>
+    </div>
+    <nav id="nav"></nav>
+  </aside>
+
+  <main class="main">
+    <div class="mainpad">
+
+      <!-- ============ START HERE ============ -->
+      <section class="module active" data-mod="start">
+        <div class="mod-head">
+          <div class="mod-badge">★</div>
+          <div><h1>Start Here</h1><div class="mod-sub">How to use this guide + the one mindset that matters</div></div>
+        </div>
+        <p class="lead">This guide takes you from zero to interview-ready across 8 core areas. Read them in order — each module reuses ideas from the one before it. Every module has the same shape: <span class="hl">why it matters</span>, plain-language concepts, a glossary, the interview questions you'll actually face (click to reveal answers), and a one-screen cheat-sheet.</p>
+
+        <div class="why">
+          <div class="lbl">The one thing to internalize</div>
+          Together AI is <b>not</b> testing whether you can build AI models. They are testing one thing: <i>"When a GPU cluster misbehaves in production and a customer is escalating, can you reason about it calmly and narrow it down?"</i> As you read, always ask: <b>"If this broke, how would I notice, and how would I isolate it?"</b>
+        </div>
+
+        <h2 class="sec">The 8 modules</h2>
+        <div class="glossary">
+          <div class="gl-row"><span class="gl-term">A · GPU + AI Infra</span><span class="gl-def">Your biggest gap. What a GPU does, VRAM, OOM, batching, training vs inference, cold start.</span></div>
+          <div class="gl-row"><span class="gl-term">B · Kubernetes for AI</span><span class="gl-def">Your existing skill, reframed: GPU scheduling, taints, limits, the four pod failure states.</span></div>
+          <div class="gl-row"><span class="gl-term">C · Inference Serving</span><span class="gl-def">The differentiator. Latency vs throughput, batching, KV cache, queues, saturation.</span></div>
+          <div class="gl-row"><span class="gl-term">D · HPC / Cluster</span><span class="gl-def">Job-scheduler mindset: SLURM, queues, preemption, compute/storage separation.</span></div>
+          <div class="gl-row"><span class="gl-term">E · Storage</span><span class="gl-def">The quiet root cause: NFS, WEKA/VAST, model-load bottlenecks, starved GPUs.</span></div>
+          <div class="gl-row"><span class="gl-term">F · Networking</span><span class="gl-def">The request lifecycle, TCP/HTTP, K8s networking, "is it network or the app?"</span></div>
+          <div class="gl-row"><span class="gl-term">G · Python &amp; API Tools</span><span class="gl-def">The hands-on layer: curl, latency &amp; retry scripts, reading JSON logs fast.</span></div>
+          <div class="gl-row"><span class="gl-term">H · Observability</span><span class="gl-def">Your home turf: logs/metrics/traces, GPU metrics, the incident funnel.</span></div>
+        </div>
+
+        <h2 class="sec">Tips</h2>
+        <p>Use the left nav to jump between modules, click any interview question to reveal a crisp answer, and mark a module "studied" at the bottom of each page to track progress. Hit <span class="k">Export as PDF</span> in the toolbar to take the whole thing offline.</p>
+
+        <div class="foot-nav"><span></span>
+          <button class="foot-btn next" data-go="A"><span class="dir">Next</span>A · GPU + AI Infrastructure →</button>
+        </div>
+      </section>
+
+      <!-- ============ MODULE A ============ -->
+      <section class="module m-A" data-mod="A">
+        <div class="mod-head">
+          <div class="mod-badge">A</div>
+          <div><h1>GPU + AI Infrastructure Basics</h1><div class="mod-sub">The most important module — your real gap</div></div>
+        </div>
+        <div class="why"><div class="lbl">Why it matters</div>Every other topic points back to one question: <i>is the GPU doing useful work, and does it have what it needs?</i> You can't debug "slow inference" or "out-of-memory" without understanding what a GPU actually does.</div>
+
+        <h2 class="sec">Concepts</h2>
+
+        <h3 class="cpt">A1 · GPU vs CPU</h3>
+        <p>A <span class="term">CPU</span> is a small team of very smart generalists: a handful of powerful cores that each handle complicated, different tasks fast — great for logic and running the OS. A <span class="term">GPU</span> is a stadium full of simple workers: thousands of small cores that all do the <i>same simple math at the same time</i> (parallelism).</p>
+        <p>AI needs this because a neural network is, underneath, an enormous pile of multiplications and additions on grids of numbers (matrices) — exactly the "same operation, millions of times" work GPUs were born for. A GPU does it 10–100× faster than a CPU.</p>
+        <div class="analogy"><span class="ic">🧠</span><div><b>Mental model:</b> CPU = a few geniuses; GPU = a massive crowd doing identical math in unison.</div></div>
+
+        <h3 class="cpt">A2 · CUDA — how software talks to the GPU</h3>
+        <p><span class="term">CUDA</span> is NVIDIA's software layer (toolkit + drivers) that lets programs send work to NVIDIA GPUs. A <span class="hl">"CUDA error"</span> in logs almost always means <i>"something went wrong while the GPU was working"</i> — most often running out of memory.</p>
+        <p>Two pieces you'll see: the <span class="term">GPU driver</span> (low-level software on the node so the OS can see/control the GPU — missing/wrong version means the GPU effectively "doesn't exist"), and the <span class="term">CUDA toolkit/runtime</span> (libraries the app uses — a version mismatch crashes things on startup). So when a GPU "isn't working," first check <i>driver/CUDA visible and healthy?</i> before blaming the model.</p>
+
+        <h3 class="cpt">A3 · VRAM vs RAM — the concept behind most incidents</h3>
+        <p>The CPU uses <span class="term">RAM</span>. A GPU has its <i>own separate memory</i> called <span class="term">VRAM</span>. They are not the same pool. To run a model on a GPU, its weights must physically fit inside VRAM (a GPU might have 24, 40, 80, or 141 GB). Exceed it and you get an <span class="term">out-of-memory (OOM)</span> crash. Three things compete for that fixed budget:</p>
+        <p>1. <b>Model weights</b> — the model's size. 2. <b>Activations</b> — temporary numbers while processing. 3. <b>KV cache</b> — memory to "remember" the conversation during generation (Module C).</p>
+        <div class="analogy"><span class="ic">🅿️</span><div><b>Mental model:</b> VRAM is a fixed-size parking lot. The model is a big bus always parked there; every active request parks more cars. Lot full → next car can't park → OOM.</div></div>
+
+        <h3 class="cpt">A4 · Batch size — trading memory for speed</h3>
+        <p>A <span class="term">batch</span> is a group of requests processed together in one GPU pass. Bigger batch → more useful work per pass → higher <b>throughput</b>, but more VRAM used. Smaller batch → less VRAM, but the GPU is underused (low utilization). This is the central tension you'll debug: crank batch size for throughput → OOM crashes; keep it tiny → "the GPU isn't being used." <span class="hl">Batch size is the dial connecting memory pressure and performance.</span></p>
+
+        <h3 class="cpt">A5 · Training vs Fine-tuning vs Inference</h3>
+        <p><span class="term">Training</span> = building a model from scratch (days/weeks, many GPUs, very hungry). <span class="term">Fine-tuning</span> = nudging an already-trained model with a smaller specialized dataset (cheaper, but still "writes" a new model). <span class="term">Inference</span> = <i>using</i> a finished model to answer requests — this is serving, and where most support work lives.</p>
+        <div class="analogy"><span class="ic">🎓</span><div><b>Analogy:</b> Training = teaching a student everything. Fine-tuning = a specialist bootcamp for the graduate. Inference = the graduate now answering questions on the job.</div></div>
+        <p>Why it matters: their resource patterns differ. Training/fine-tuning are long-running batch <i>jobs</i> (HPC, Module D); inference is a long-lived <i>service</i> on live traffic (Kubernetes, Module B). Knowing which one a ticket involves instantly narrows your hypotheses.</p>
+
+        <h3 class="cpt">A6 · Tensor vs Data parallelism (high level)</h3>
+        <p><span class="term">Data parallelism</span> = a full copy of the model on each GPU, each serving different requests (like identical cashiers with their own lines) — used to handle <i>more traffic</i>. <span class="term">Tensor parallelism</span> = the model is too big for one GPU, so the model <i>itself</i> is split across several GPUs working on one request together (cashiers shoulder-to-shoulder on one giant register) — used to <i>fit giant models</i>. When tensor parallelism is involved, the GPUs must talk to each other very fast (why GPU-to-GPU networking, Module F, matters).</p>
+
+        <h3 class="cpt">A7 · Cold start latency</h3>
+        <p>When an inference service first starts (or scales up a replica), it must <span class="term">load the model weights from storage into VRAM</span> before answering anything. For a large model (tens of GB) this takes seconds to minutes. The first requests during this window are slow or fail — this is <span class="term">cold start</span>. Once loaded ("warm"), responses are fast. This explains a huge number of "first request is slow after a deploy/restart" tickets, and ties into Module E (slow storage = slow load = long cold start).</p>
+
+        <h2 class="sec">Glossary</h2>
+        <div class="glossary">
+          <div class="gl-row"><span class="gl-term">GPU / VRAM</span><span class="gl-def">The parallel-math processor and its dedicated, fixed-size memory.</span></div>
+          <div class="gl-row"><span class="gl-term">CUDA</span><span class="gl-def">NVIDIA's software layer; "CUDA error" usually = GPU problem, often OOM.</span></div>
+          <div class="gl-row"><span class="gl-term">OOM</span><span class="gl-def">Out of VRAM; the process crashes.</span></div>
+          <div class="gl-row"><span class="gl-term">Batch size</span><span class="gl-def">How many requests processed together; trades VRAM for throughput.</span></div>
+          <div class="gl-row"><span class="gl-term">Training/Fine-tune/Inference</span><span class="gl-def">Build / specialize / use a model. Support = inference.</span></div>
+          <div class="gl-row"><span class="gl-term">Throughput vs Latency</span><span class="gl-def">Requests-per-second vs time-for-one-request.</span></div>
+          <div class="gl-row"><span class="gl-term">Cold start</span><span class="gl-def">Slow first responses while a model loads into VRAM.</span></div>
+        </div>
+
+        <h2 class="sec">Interview-readiness recap</h2>
+        <div class="qa">
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>What happens when you run a model on GPU vs CPU?</summary><div class="q-body"><p>The GPU does the model's massive parallel matrix math far faster than a CPU's few cores. The model weights must fit in the GPU's separate VRAM; the CPU usually handles orchestration, tokenization, and feeding data to the GPU.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>What is VRAM and what causes OOM?</summary><div class="q-body"><p>VRAM is the GPU's own fixed memory. OOM happens when model weights + activations + KV cache exceed it — commonly from too-large batch size, too-big a model for the GPU, too many replicas sharing one GPU, or a memory leak.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Training vs fine-tuning vs inference?</summary><div class="q-body"><p>Build from scratch / specialize an existing model / use a finished model to serve requests. Support work is mostly inference.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Why does batching improve throughput?</summary><div class="q-body"><p>The GPU processes many requests in one parallel pass, keeping its thousands of cores busy, instead of wasting them on one request at a time.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Tensor vs data parallelism?</summary><div class="q-body"><p>Data = full model copies for scale; tensor = one model split across GPUs because it's too big to fit on one.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Why cold start latency?</summary><div class="q-body"><p>A fresh replica must load large weights from storage into VRAM before serving; first requests are slow until it's warm.</p></div></details>
+        </div>
+
+        <h2 class="sec">Cheat-sheet</h2>
+        <div class="cheat">GPU = thousands of simple cores doing identical math (matrices) -> great for AI
+CPU = few smart cores -> orchestration, logic, feeding the GPU
+VRAM != RAM. VRAM is fixed. Model + activations + KV cache must fit.
+OOM causes: batch too big | model too big | too many replicas/GPU | leak
+Batch size UP = throughput UP but VRAM UP  |  Batch DOWN = GPU idle, low util
+Training (build) != Fine-tune (specialize) != Inference (serve)  <- support = inference
+Data parallel = copies for scale | Tensor parallel = split big model across GPUs
+Cold start = slow first requests while weights load into VRAM
+<span class="cmt">First question always: is the GPU healthy & visible, and does it have VRAM headroom?</span></div>
+
+        <button class="read-toggle" data-read="A"><span class="box">✓</span>Mark this module as studied</button>
+        <div class="foot-nav">
+          <button class="foot-btn" data-go="start"><span class="dir">Previous</span>← Start Here</button>
+          <button class="foot-btn next" data-go="B"><span class="dir">Next</span>B · Kubernetes for AI →</button>
+        </div>
+      </section>
+
+      <!-- ============ MODULE B ============ -->
+      <section class="module m-B" data-mod="B">
+        <div class="mod-head">
+          <div class="mod-badge">B</div>
+          <div><h1>Kubernetes for AI Workloads</h1><div class="mod-sub">Your existing skill, reframed for GPUs</div></div>
+        </div>
+        <div class="why"><div class="lbl">Why it matters</div>You already know Kubernetes — this module reframes it for GPU/AI workloads, the exact lens Together AI cares about. The job is mostly <i>"workloads are misbehaving inside a cluster — diagnose it."</i></div>
+
+        <h2 class="sec">Concepts</h2>
+
+        <h3 class="cpt">B1 · Core objects (fast refresher)</h3>
+        <p><span class="term">Cluster</span> = machines managed together; the <span class="term">control plane</span> is the brain, <span class="term">worker nodes</span> run workloads. <span class="term">Pod</span> = smallest run unit (where your model server runs). <span class="term">Deployment</span> = manages identical pods (replicas), rolling updates, self-healing. <span class="term">Service</span> = stable network address + load balancing in front of changing pods (ClusterIP=internal, LoadBalancer=external). <span class="term">Namespace</span> = a logical folder.</p>
+        <pre class="code">kubectl get pods -A           # what's running, what's broken
+kubectl describe pod &lt;pod&gt;    # WHY a pod is stuck/pending (read Events at bottom)
+kubectl logs &lt;pod&gt;            # what the app said
+kubectl logs &lt;pod&gt; --previous # logs from the crashed previous run
+kubectl get nodes             # are nodes Ready
+kubectl top nodes / top pods  # CPU/memory usage</pre>
+        <div class="analogy"><span class="ic">🔎</span><div><b>Rule of thumb:</b> <span class="k">describe</span> tells you why the <i>scheduler/cluster</i> is unhappy; <span class="k">logs</span> tells you why the <i>app</i> is unhappy.</div></div>
+
+        <h3 class="cpt">B2 · Requests vs Limits</h3>
+        <p><span class="term">requests</span> = the guaranteed minimum (the scheduler uses it to find a node). <span class="term">limits</span> = the maximum allowed — exceed the <i>memory</i> limit and the pod is killed (<span class="hl">OOMKilled</span>). Models are memory-hungry: limit too low → OOMKilled on load; requests too high → scheduler finds no node → pod stays <b>Pending</b>.</p>
+
+        <h3 class="cpt">B3 · How K8s schedules GPUs (the AI-specific core)</h3>
+        <p>Kubernetes can't see GPUs by itself. The pieces that make it work: a <span class="term">GPU device plugin</span> (usually a DaemonSet) that <i>advertises</i> the node's GPUs as a schedulable resource <span class="k">nvidia.com/gpu</span>; and a <span class="term">DaemonSet</span> that runs one copy per node to deploy drivers/plugin everywhere.</p>
+        <pre class="code">resources:
+  limits:
+    nvidia.com/gpu: 1     # give this pod 1 GPU</pre>
+        <p>GPUs are requested as <i>whole units</i>. If the device plugin isn't running, K8s thinks there are zero GPUs even on a GPU machine. If a pod requests a GPU and none is free, it stays <b>Pending</b>.</p>
+
+        <h3 class="cpt">B4 · Keeping GPU nodes for GPU work</h3>
+        <p><span class="term">Taint</span> = a "keep out" sign on a node (no pod schedules there by default). <span class="term">Toleration</span> = a "permission slip" on a pod that lets it tolerate that taint. <span class="term">Node affinity</span> = rules that <i>attract</i> a pod to certain nodes (e.g., only <span class="k">gpu-type=a100</span>). So GPU nodes get a taint, GPU pods carry the matching toleration → only GPU pods land there.</p>
+        <div class="analogy"><span class="ic">🚪</span><div><b>Analogy:</b> a taint is a velvet rope; a toleration is being on the guest list; node affinity is "I want the table by the window."</div></div>
+
+        <h3 class="cpt">B5 · Pod pressure and eviction</h3>
+        <p>When a node runs low on memory/disk, the <span class="term">kubelet</span> starts <span class="term">evicting</span> pods (often the ones using more than they requested). So "pods randomly evicted" usually means <b>node memory or disk pressure</b>, not a pod bug. Check <span class="k">kubectl describe node</span> for <span class="k">MemoryPressure</span>/<span class="k">DiskPressure</span>.</p>
+
+        <h3 class="cpt">B6 · Cluster autoscaling</h3>
+        <p><span class="term">Cluster Autoscaler</span> adds nodes when pods can't schedule (e.g., Pending GPU pods) and removes idle ones. <span class="term">Horizontal Pod Autoscaler (HPA)</span> adds replicas under load. The GPU gotcha: spinning up a GPU node is slow and pricey, and a new replica still has to <i>cold start</i> before it helps — so <span class="hl">scaling up doesn't fix latency instantly</span>.</p>
+
+        <h3 class="cpt">B7 · The four failure states to know on sight</h3>
+        <p><span class="term">Pending</span> → not scheduled: no node with enough CPU/mem/GPU, unmatched taints, or unsatisfiable affinity → <span class="k">describe pod</span>. <span class="term">ImagePullBackOff</span> → can't download the image: wrong name/tag, registry auth, network → <span class="k">describe pod</span>. <span class="term">CrashLoopBackOff</span> → starts then crashes repeatedly: app error, bad config/env, missing dependency, model load failure, or OOM → <span class="k">logs --previous</span>. <span class="term">OOMKilled</span> → exceeded memory limit: limit too low or using too much → <span class="k">describe pod</span> then fix limits/reduce memory.</p>
+
+        <h2 class="sec">Glossary</h2>
+        <div class="glossary">
+          <div class="gl-row"><span class="gl-term">Pod/Deployment/Service</span><span class="gl-def">Run unit / pod manager / stable network front. Namespace = logical folder.</span></div>
+          <div class="gl-row"><span class="gl-term">requests / limits</span><span class="gl-def">Guaranteed minimum / hard max (mem over-limit = OOMKilled).</span></div>
+          <div class="gl-row"><span class="gl-term">Device plugin</span><span class="gl-def">Advertises GPUs to K8s as nvidia.com/gpu.</span></div>
+          <div class="gl-row"><span class="gl-term">DaemonSet</span><span class="gl-def">One pod per node (used for drivers/plugins).</span></div>
+          <div class="gl-row"><span class="gl-term">Taint/Toleration/Affinity</span><span class="gl-def">Keep-out sign / permission slip / attraction rule.</span></div>
+          <div class="gl-row"><span class="gl-term">Eviction</span><span class="gl-def">Kubelet removing pods under node pressure.</span></div>
+          <div class="gl-row"><span class="gl-term">The four states</span><span class="gl-def">Pending / CrashLoopBackOff / ImagePullBackOff / OOMKilled.</span></div>
+        </div>
+
+        <h2 class="sec">Interview-readiness recap</h2>
+        <div class="qa">
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>A GPU pod is stuck Pending — how do you debug?</summary><div class="q-body"><p><span class="k">kubectl describe pod</span> and read Events. Check: are there GPU nodes with free GPUs? Is the device plugin running? Does the pod's toleration match the node's taint? Does affinity match a real node? Is there a GPU quota limit?</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>What causes CrashLoopBackOff?</summary><div class="q-body"><p>The container keeps starting and dying — app crash, bad config/env, missing dependency, failed model load, or OOM. Check <span class="k">kubectl logs &lt;pod&gt; --previous</span>.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>limits vs requests?</summary><div class="q-body"><p>Requests = guaranteed minimum the scheduler reserves; limits = max allowed. Exceeding the memory limit → OOMKilled.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>How does K8s schedule GPU workloads?</summary><div class="q-body"><p>A device plugin advertises <span class="k">nvidia.com/gpu</span>; pods request whole GPUs; if none free, they stay Pending. GPU nodes are protected with taints, and pods carry matching tolerations + affinity.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Pods being evicted randomly?</summary><div class="q-body"><p>Usually node memory/disk pressure; the kubelet evicts pods (often over-request ones). Check <span class="k">describe node</span> for pressure conditions.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Works in dev, fails in prod GPU cluster?</summary><div class="q-body"><p>Compare GPU availability/quota, driver &amp; CUDA version on nodes, taints/affinity, resource limits, image/registry access, and config/secrets differences.</p></div></details>
+        </div>
+
+        <h2 class="sec">Cheat-sheet</h2>
+        <div class="cheat">describe = why the CLUSTER is unhappy  |  logs (--previous) = why the APP is unhappy
+Pending          -> no fit: no GPU/CPU/mem, taint/affinity mismatch, quota
+ImagePullBackOff -> bad image name/tag or registry auth
+CrashLoopBackOff -> app/config/dependency/model-load fail or OOM -> logs --previous
+OOMKilled        -> memory limit too low / using too much -> fix limits or reduce mem
+GPU plumbing: driver (DaemonSet) -> device plugin advertises nvidia.com/gpu -> pod requests it
+Protect GPU nodes: taint (keep out) + toleration (pass) + node affinity (target type)
+Eviction = node memory/disk pressure (check: kubectl describe node)
+<span class="cmt">Autoscaling != instant: new GPU node is slow + new replica must cold-start</span></div>
+
+        <button class="read-toggle" data-read="B"><span class="box">✓</span>Mark this module as studied</button>
+        <div class="foot-nav">
+          <button class="foot-btn" data-go="A"><span class="dir">Previous</span>← A · GPU + AI Infra</button>
+          <button class="foot-btn next" data-go="C"><span class="dir">Next</span>C · Inference Serving →</button>
+        </div>
+      </section>
+
+      <!-- ============ MODULE C ============ -->
+      <section class="module m-C" data-mod="C">
+        <div class="mod-head">
+          <div class="mod-badge">C</div>
+          <div><h1>Distributed AI Serving / Inference</h1><div class="mod-sub">The differentiator — reason about why serving is slow</div></div>
+        </div>
+        <div class="why"><div class="lbl">Why it matters</div>Lots of candidates know Kubernetes; few can reason about <i>why an inference service is slow or inconsistent</i>. This turns "the pod looks fine but the customer says it's slow" into a real diagnosis.</div>
+
+        <h2 class="sec">Concepts</h2>
+
+        <h3 class="cpt">C1 · What serving / inference is</h3>
+        <p><span class="term">Inference serving</span> = a long-lived service that holds a model in GPU memory and answers requests over an API. The software is a <span class="term">model server / inference engine</span>. Two names to know: <span class="term">vLLM</span> (high-performance open-source LLM engine, famous for PagedAttention + continuous batching) and <span class="term">Triton</span> (NVIDIA's general-purpose model server with dynamic batching). Key insight: <span class="hl">the model server decides how requests are batched, queued, and run on the GPU</span> — many "performance" tickets are really server config issues.</p>
+
+        <h3 class="cpt">C2 · Latency vs Throughput</h3>
+        <p><span class="term">Latency</span> = how long <i>one</i> request takes (watch percentiles: <b>p50</b> median, <b>p95/p99</b> the slow tail users feel). <span class="term">Throughput</span> = requests/tokens handled <i>per second</i>. They trade off: batching many requests is efficient for the GPU (high throughput) but makes each request wait for its batch-mates (higher latency). <span class="hl">Almost every tuning decision is a latency-vs-throughput trade.</span> First clarifying question to a customer: which one are they hurting on?</p>
+
+        <h3 class="cpt">C3 · Request batching</h3>
+        <p><span class="term">Static batching</span> = wait for N requests (or a timeout), then run together (first request waits). <span class="term">Continuous/dynamic batching</span> (vLLM) = continuously add/remove requests from the running batch so the GPU never idles — the modern, efficient approach. When throughput is low or GPU utilization is low despite traffic, <b>batching misconfigured or disabled</b> is your top hypothesis.</p>
+
+        <h3 class="cpt">C4 · The KV cache</h3>
+        <p>An LLM generates one token at a time and must "remember" everything so far. To avoid recomputing, it stores intermediate results in the <span class="term">KV cache</span> in VRAM. Crucially, <span class="hl">the KV cache grows with prompt + output length</span>. You can serve many short requests fine but a few very long ones cause OOM — the main cause of "OOM only on long requests." Engines like vLLM optimize exactly this.</p>
+
+        <h3 class="cpt">C5 · Queueing &amp; saturation</h3>
+        <p>A GPU can only do so much at once; extra requests wait in a <span class="term">queue</span>. If arrival rate &gt; service rate, the queue grows and wait time adds to latency — so latency spikes even though the GPU is healthy and busy. This is the <span class="hl">"GPU at 95%, latency exploding"</span> pattern: the GPU isn't broken, it's <i>saturated</i>. Fix = more capacity, better batching, smaller requests, or load shedding — not "restart the pod."</p>
+        <div class="analogy"><span class="ic">📊</span><div><b>Familiar from Kafka:</b> consumer lag when producers outpace consumers is the same shape — backlog from a throughput mismatch.</div></div>
+
+        <h3 class="cpt">C6 · Streaming inference</h3>
+        <p><span class="term">Streaming</span> sends tokens back as generated (answer appears word-by-word) instead of waiting for the whole response. It improves <i>perceived</i> latency even if total time is similar. Streaming tickets usually involve the connection (proxies/load balancers buffering the stream) rather than the model — a link to Module F.</p>
+
+        <h3 class="cpt">C7 · Warm/cold start &amp; replica consistency</h3>
+        <p><span class="term">Cold start</span> (recap): a fresh replica must load the model before it's useful. <span class="term">Inconsistent responses across requests</span> is a classic distributed-serving symptom: different replicas may run <i>different model versions</i> (a bad/partial rollout), different configs, or different sampling settings. "Same prompt, different quality" → suspect replica/version mismatch before the model.</p>
+
+        <h3 class="cpt">C8 · Why huge models need distributed serving</h3>
+        <p>If a model is too big for one GPU's VRAM, it's split across GPUs (tensor parallelism), which must exchange data <i>during every request</i> over a fast interconnect. So a <i>network</i> problem between GPUs shows up as an <i>inference latency</i> problem: <span class="hl">in big-model serving, slow GPU-to-GPU networking looks like a slow model.</span></p>
+
+        <h2 class="sec">Glossary</h2>
+        <div class="glossary">
+          <div class="gl-row"><span class="gl-term">Model server</span><span class="gl-def">Software serving the model (vLLM, Triton).</span></div>
+          <div class="gl-row"><span class="gl-term">Latency / Throughput</span><span class="gl-def">One-request time (p50/p95/p99) vs requests-per-second.</span></div>
+          <div class="gl-row"><span class="gl-term">Batching</span><span class="gl-def">Grouping requests; continuous batching keeps the GPU always busy.</span></div>
+          <div class="gl-row"><span class="gl-term">KV cache</span><span class="gl-def">Per-request memory that grows with prompt+output length.</span></div>
+          <div class="gl-row"><span class="gl-term">Queue / saturation</span><span class="gl-def">Backlog when arrivals exceed service rate; adds wait time.</span></div>
+          <div class="gl-row"><span class="gl-term">Streaming</span><span class="gl-def">Return tokens as generated; improves perceived latency.</span></div>
+          <div class="gl-row"><span class="gl-term">Replica mismatch</span><span class="gl-def">Different versions/configs across replicas → inconsistent responses.</span></div>
+        </div>
+
+        <h2 class="sec">Interview-readiness recap</h2>
+        <div class="qa">
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>API latency spikes from 200ms to 5s — what do you check?</summary><div class="q-body"><p>Is traffic up (queue backlog/saturation)? GPU utilization (saturated vs idle)? Batching working? Request/output sizes (KV cache growth)? Cold start from a recent scale/deploy? Network/proxy buffering? A recent change? Narrow by <i>isolated vs systemic</i> and <i>what changed</i>.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Throughput dropped 50% after scaling — why?</summary><div class="q-body"><p>New replicas may be cold-starting; batching may not span replicas; a CPU/network/storage bottleneck now feeds GPUs poorly; or load balancing is uneven so one replica is saturated while others idle.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Responses inconsistent across requests — why?</summary><div class="q-body"><p>Replicas running different model versions/configs (bad rollout), different sampling settings, or cache differences. Check rollout status and version across replicas.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>What is the KV cache?</summary><div class="q-body"><p>Per-request memory storing attention results so the model doesn't recompute; it grows with context length and is a common OOM cause on long requests.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>vLLM / Triton?</summary><div class="q-body"><p>Model servers that handle batching/queueing/memory; vLLM is known for continuous batching + efficient KV-cache (PagedAttention).</p></div></details>
+        </div>
+
+        <h2 class="sec">Cheat-sheet</h2>
+        <div class="cheat">Latency = 1 request (watch p95/p99)   Throughput = req/sec   -> they TRADE OFF
+Slow + GPU ~95% + traffic up  -> SATURATION/queue backlog (add capacity, not restart)
+Slow + GPU low util           -> batching off, or CPU/net/storage bottleneck feeding GPU
+OOM only on long prompts      -> KV cache growth (context too long / too many long reqs)
+Inconsistent answers          -> replica/version/config mismatch (check rollout)
+Slow first reqs after deploy  -> cold start (model loading)
+Streaming issues              -> usually proxy/LB buffering, not the model
+<span class="cmt">Big model split on many GPUs -> slow GPU-GPU network LOOKS like slow inference</span></div>
+
+        <button class="read-toggle" data-read="C"><span class="box">✓</span>Mark this module as studied</button>
+        <div class="foot-nav">
+          <button class="foot-btn" data-go="B"><span class="dir">Previous</span>← B · Kubernetes for AI</button>
+          <button class="foot-btn next" data-go="D"><span class="dir">Next</span>D · HPC / Cluster →</button>
+        </div>
+      </section>
+
+      <!-- ============ MODULE D ============ -->
+      <section class="module m-D" data-mod="D">
+        <div class="mod-head">
+          <div class="mod-badge">D</div>
+          <div><h1>HPC / Cluster Concepts</h1><div class="mod-sub">The job-scheduler mindset</div></div>
+        </div>
+        <div class="why"><div class="lbl">Why it matters</div>Together AI runs both inference <i>services</i> (K8s) and large <i>batch jobs</i> like training/fine-tuning (HPC). You need the support mindset for the HPC side: jobs, queues, schedulers, and why a job waits. Conceptual understanding is enough.</div>
+
+        <h2 class="sec">Concepts</h2>
+
+        <h3 class="cpt">D1 · HPC vs Kubernetes</h3>
+        <p><span class="term">HPC</span> (High-Performance Computing) is big batch jobs on big clusters. The key difference: <b>inference (K8s)</b> = long-lived <i>services</i> on live traffic, scaled by replicas ("always-on restaurant"); <b>HPC</b> = <i>jobs</i> you submit, wait in line for, run to completion, and that then exit ("submit a print job to a shared printer queue").</p>
+
+        <h3 class="cpt">D2 · Job schedulers &amp; SLURM</h3>
+        <p>A <span class="term">job scheduler</span> decides which job runs where and when, by resources and priority. <span class="term">SLURM</span> is the most common one. Workflow: submit a job ("4 GPUs for 6 hours, run this script") → it enters a <span class="term">queue</span> → when resources free up SLURM allocates and runs it → it finishes/fails and releases resources.</p>
+        <pre class="code">sbatch   # submit a job
+squeue   # see the queue / why a job is waiting
+scancel  # cancel a job
+sinfo    # node / partition status</pre>
+
+        <h3 class="cpt">D3 · Partitions, queues, priority</h3>
+        <p>A <span class="term">partition</span> is a named group of nodes with a purpose/policy (e.g., a <span class="k">gpu</span> partition). A <span class="term">queue</span> holds waiting jobs. A job waits because requested resources aren't free, priority is low, the partition is full, or it asked for <i>more</i> than the partition can ever provide (waits forever — a classic bug). Customer says "stuck in queue for hours"? Check: are the requested resources available in that partition? Is the request even satisfiable? Higher-priority jobs ahead? Partition full / nodes down?</p>
+
+        <h3 class="cpt">D4 · Failures, retries, preemption</h3>
+        <p><span class="term">Job failure mid-run</span> — a long job dies partway; without <span class="term">checkpointing</span> all progress is lost. <span class="term">Preemption</span> — a higher-priority job can <i>kick out</i> a running lower-priority one (paused/requeued), so "my job stopped" can be preemption, not a crash. <span class="term">Retry</span> — schedulers can auto-resubmit failed jobs.</p>
+
+        <h3 class="cpt">D5 · Compute vs storage separation</h3>
+        <p>In big clusters, GPU (compute) nodes are separate from storage nodes; compute reads data/weights over the network from shared storage. The consequence (a frequent root cause): <span class="hl">GPUs can be idle and healthy while the job is stuck waiting on slow storage</span> — compute is starved because data isn't arriving fast enough. This bridges into Module E.</p>
+
+        <h2 class="sec">Glossary</h2>
+        <div class="glossary">
+          <div class="gl-row"><span class="gl-term">HPC</span><span class="gl-def">Big batch-job computing.</span></div>
+          <div class="gl-row"><span class="gl-term">Scheduler / SLURM</span><span class="gl-def">Decides what runs where/when; SLURM is the standard.</span></div>
+          <div class="gl-row"><span class="gl-term">Partition / queue</span><span class="gl-def">A node group with a policy / the line of waiting jobs.</span></div>
+          <div class="gl-row"><span class="gl-term">Preemption</span><span class="gl-def">Higher-priority job evicts a lower-priority running one.</span></div>
+          <div class="gl-row"><span class="gl-term">Checkpointing</span><span class="gl-def">Periodically saving progress so a failed job can resume.</span></div>
+          <div class="gl-row"><span class="gl-term">Compute/storage separation</span><span class="gl-def">GPU nodes read data over the network from shared storage.</span></div>
+        </div>
+
+        <h2 class="sec">Interview-readiness recap</h2>
+        <div class="qa">
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>What is a job scheduler / SLURM for?</summary><div class="q-body"><p>It allocates cluster resources to submitted jobs by availability and priority, queuing jobs until their requested resources free up. SLURM is the standard HPC scheduler.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>A job is stuck in queue too long — what do you check?</summary><div class="q-body"><p>Are the requested resources available in that partition? Is the request even satisfiable (not asking for more than exists)? Higher-priority jobs ahead? Partition full or nodes drained? Use <span class="k">squeue</span>/<span class="k">sinfo</span>.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Compute nodes available but jobs aren't running — why?</summary><div class="q-body"><p>The request may not match (wrong partition, more time/GPUs than allowed), the scheduler may hold for a reservation/priority, nodes may be drained, or a dependency/quota is blocking.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>A job fails mid-run — what happens?</summary><div class="q-body"><p>It releases resources; progress is lost unless it checkpointed. With retries configured it may resubmit. Distinguish a crash from a <i>preemption</i> by a higher-priority job.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>GPUs idle but job stuck — why?</summary><div class="q-body"><p>Often storage starvation — the GPUs are waiting for data/weights from slow shared storage (compute/storage separation).</p></div></details>
+        </div>
+
+        <h2 class="sec">Cheat-sheet</h2>
+        <div class="cheat">HPC = submit JOBS to a queue (batch)   vs   Inference = long-lived SERVICES (live traffic)
+SLURM: sbatch (submit) | squeue (why waiting) | scancel | sinfo (node/partition status)
+Job stuck in queue -> resources unavailable / request unsatisfiable / low priority / partition full
+Job stopped running -> could be PREEMPTION (higher-priority job took it), not a crash
+Failed mid-run -> progress lost unless CHECKPOINTED
+<span class="cmt">GPUs idle but job "running"/stuck -> STORAGE starvation (data not arriving) -> see Module E</span></div>
+
+        <button class="read-toggle" data-read="D"><span class="box">✓</span>Mark this module as studied</button>
+        <div class="foot-nav">
+          <button class="foot-btn" data-go="C"><span class="dir">Previous</span>← C · Inference Serving</button>
+          <button class="foot-btn next" data-go="E"><span class="dir">Next</span>E · Storage →</button>
+        </div>
+      </section>
+
+      <!-- ============ MODULE E ============ -->
+      <section class="module m-E" data-mod="E">
+        <div class="mod-head">
+          <div class="mod-badge">E</div>
+          <div><h1>Storage Systems in AI Clusters</h1><div class="mod-sub">The quiet root cause behind many GPU incidents</div></div>
+        </div>
+        <div class="why"><div class="lbl">Why it matters</div>Storage is the quiet root cause behind slow model loading, long cold starts, and idle-but-stuck GPUs. Models are huge files; getting them onto the GPU fast depends entirely on storage. Debugging this well makes you stand out.</div>
+
+        <h2 class="sec">Concepts</h2>
+
+        <h3 class="cpt">E1 · Why storage matters in AI</h3>
+        <p>Two storage-dependent moments: <b>model loading</b> — weights (tens of GB) must be read from storage into the node and onto the GPU; slow storage = long <span class="term">cold start</span>. <b>Training/data feeding</b> — training jobs continuously read large datasets; if storage can't keep up, GPUs starve. So "slow startup" and "idle GPUs" tickets often bottom out in storage.</p>
+
+        <h3 class="cpt">E2 · NFS — the simplest shared storage</h3>
+        <p><span class="term">NFS</span> (Network File System) lets many machines mount and read the same files over the network as if local. Simple and common, but a <span class="hl">bottleneck under heavy parallel load</span>: if dozens of GPU nodes all pull a big model from one NFS server at once, its network and disk get overwhelmed → everyone's load is slow. Fine at modest scale, strains under heavy AI load.</p>
+
+        <h3 class="cpt">E3 · Distributed storage (VAST, WEKA)</h3>
+        <p>Serious AI clusters use <span class="term">distributed/parallel file systems</span> built for high bandwidth and many simultaneous readers. Two names: <span class="term">VAST</span> and <span class="term">WEKA</span>. The concept: instead of one server, data is spread across many storage nodes, so many GPU nodes can read in parallel at very high aggregate bandwidth — this is what keeps large GPU fleets fed.</p>
+
+        <h3 class="cpt">E4 · The three storage symptoms</h3>
+        <p><span class="term">Bandwidth bottleneck</span> — demand exceeds storage throughput; everything storage-dependent slows <i>together</i>, especially during mass scale-ups. <span class="term">File access latency</span> — each read has high delay (far/overloaded storage); many small reads crawl. <span class="term">Model loading bottleneck</span> — slow cold starts because weights load slowly. Mitigations: local caching of weights, faster/distributed storage, sharded model formats, pre-warming replicas.</p>
+
+        <h3 class="cpt">E5 · "Fails to load" vs "loads slowly"</h3>
+        <p><span class="hl">Loads slowly</span> → bandwidth/latency/NFS contention (performance problem). <span class="hl">Fails to load</span> → a correctness problem: corrupted/incomplete file, missing file/dependency, wrong permissions, or the node ran out of <i>disk</i> while downloading. Different branch — read the exact error and verify file/permissions/disk.</p>
+
+        <h2 class="sec">Glossary</h2>
+        <div class="glossary">
+          <div class="gl-row"><span class="gl-term">NFS</span><span class="gl-def">Simple shared network storage; can bottleneck under parallel AI load.</span></div>
+          <div class="gl-row"><span class="gl-term">VAST / WEKA</span><span class="gl-def">High-bandwidth distributed file systems for big GPU clusters.</span></div>
+          <div class="gl-row"><span class="gl-term">Bandwidth bottleneck</span><span class="gl-def">Demand exceeds throughput; everything storage-bound slows together.</span></div>
+          <div class="gl-row"><span class="gl-term">Access latency</span><span class="gl-def">Per-read delay; hurts many-small-file loads.</span></div>
+          <div class="gl-row"><span class="gl-term">Model loading bottleneck</span><span class="gl-def">Slow cold start caused by slow weight reads.</span></div>
+        </div>
+
+        <h2 class="sec">Interview-readiness recap</h2>
+        <div class="qa">
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Model loads slowly after a restart — why?</summary><div class="q-body"><p>Cold start reading large weights from storage. Suspect NFS/storage contention (many nodes pulling at once), bandwidth/latency limits, no local cache, or a far/overloaded backend. Mitigate with caching, faster/distributed storage (WEKA/VAST), or pre-warming.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>GPU nodes idle but jobs stuck waiting — why?</summary><div class="q-body"><p>Storage starvation: compute is waiting on data/weights from slow shared storage (compute/storage separation). Check storage throughput/latency and mount health.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>What is NFS and why can it be a problem?</summary><div class="q-body"><p>Shared network file system; simple but a single server can be overwhelmed when many GPU nodes read big models simultaneously, throttling everyone.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Model fails to load (not slow) — what do you check?</summary><div class="q-body"><p>Corrupted/incomplete file, missing dependency, wrong permissions, or out-of-disk on the node. Read the exact error in logs.</p></div></details>
+        </div>
+
+        <h2 class="sec">Cheat-sheet</h2>
+        <div class="cheat">Storage shows up as: slow cold start | idle-but-stuck GPUs | slow training data feed
+NFS = simple shared FS -> bottlenecks when MANY nodes pull a big model at once
+VAST / WEKA = distributed high-bandwidth FS -> many parallel readers, feeds big fleets
+LOADS SLOWLY  -> bandwidth/latency/contention (perf) -> cache, faster storage, pre-warm
+FAILS TO LOAD -> corrupt/missing file, bad permissions, out-of-disk (correctness) -> read logs
+<span class="cmt">Idle GPUs + "running" job -> suspect storage starvation first</span></div>
+
+        <button class="read-toggle" data-read="E"><span class="box">✓</span>Mark this module as studied</button>
+        <div class="foot-nav">
+          <button class="foot-btn" data-go="D"><span class="dir">Previous</span>← D · HPC / Cluster</button>
+          <button class="foot-btn next" data-go="F"><span class="dir">Next</span>F · Networking →</button>
+        </div>
+      </section>
+
+      <!-- ============ MODULE F ============ -->
+      <section class="module m-F" data-mod="F">
+        <div class="mod-head">
+          <div class="mod-badge">F</div>
+          <div><h1>Networking</h1><div class="mod-sub">Point at the right layer, fast</div></div>
+        </div>
+        <div class="why"><div class="lbl">Why it matters</div>A support engineer lives in networking: API timeouts, pods that can't talk, DNS failures, region-specific slowness, load-balancer misconfigs. You need a clean model of <i>what happens when a request travels</i> so you can point at the right layer fast.</div>
+
+        <h2 class="sec">Concepts</h2>
+
+        <h3 class="cpt">F1 · The life of an API request</h3>
+        <p>When a client calls an inference endpoint: 1) <span class="term">DNS resolution</span> (hostname → IP; if DNS fails, nothing connects). 2) <span class="term">TCP handshake</span> (SYN, SYN-ACK, ACK; reliable transport under HTTP). 3) <span class="term">TLS handshake</span> (encryption for HTTPS). 4) <span class="term">HTTP request</span> (method, headers, JSON body). 5) <span class="term">Routing</span> through a load balancer / ingress to a healthy pod. 6) <span class="term">Processing</span> (Modules A/C). 7) <span class="term">HTTP response</span> (possibly streamed). <span class="hl">When something is slow/timing out, figure out which step is the culprit</span> — that one discipline solves most network tickets.</p>
+
+        <h3 class="cpt">F2 · TCP and HTTP basics</h3>
+        <p><span class="term">TCP</span> = reliable, ordered byte delivery; a handshake opens the connection. A failure here means the client can't even reach the server (firewall, wrong port, server down). <span class="term">HTTP</span> status codes tell you a lot: <b>2xx</b> success; <b>4xx</b> client error (401/403 auth, 429 rate-limited); <b>5xx</b> server error (500 crash, <b>502/503/504</b> bad gateway / unavailable / gateway timeout). A <span class="hl">504 screams "the proxy waited for the backend and gave up"</span> → backend overload/saturation (link to C5).</p>
+
+        <h3 class="cpt">F3 · Kubernetes networking essentials</h3>
+        <p><span class="term">Pod IP vs Service IP</span> — pods are ephemeral (IPs change); a Service gives a stable virtual IP + DNS name and load-balances. <i>Always talk to the Service, not a pod IP.</i> <span class="term">CNI</span> (Container Network Interface) wires up pod networking; "pods can't talk" → suspect CNI or <span class="term">NetworkPolicies</span> (firewall rules between pods). <span class="term">CoreDNS</span> resolves Service names in-cluster; failed service-name lookups → suspect DNS. <span class="term">Ingress</span> routes external HTTP by host/path to Services (via an ingress controller like NGINX); <span class="term">LoadBalancer</span> exposes a Service externally.</p>
+
+        <h3 class="cpt">F4 · Symptoms to triage</h3>
+        <p><b>API timeout</b> → walk the request life: DNS resolving? endpoint reachable (TCP)? Is it a 504 (backend overloaded) vs no connection (firewall/security group/DNS)? Use <span class="k">curl -v</span>, <span class="k">nslookup</span>. <b>Pods can't communicate</b> → Service vs pod IP, NetworkPolicies, CNI health, DNS; test from inside a pod. <b>High latency</b> → network distance/region routing, overloaded LB, or (common) backend saturation; confirm whether time is in transit or processing. <b>Region-specific failures</b> → per-region DNS/routing, a regional LB/endpoint down, firewall differences, or capacity only in some regions.</p>
+
+        <h3 class="cpt">F5 · "Is it network or the app?"</h3>
+        <p>The most valuable habit: determine <i>where the time goes</i>. <span class="k">curl -v</span> + timing flags show connect time vs time-to-first-byte vs total. <span class="hl">Connecting instant but first byte takes 5s → backend (app/GPU/queue), not the network. Connecting itself hangs → DNS/TCP/firewall.</span> This stops you chasing the wrong layer.</p>
+
+        <h2 class="sec">Glossary</h2>
+        <div class="glossary">
+          <div class="gl-row"><span class="gl-term">DNS</span><span class="gl-def">Hostname → IP; first step, common silent failure.</span></div>
+          <div class="gl-row"><span class="gl-term">TCP handshake</span><span class="gl-def">Opens a reliable connection; failure = can't reach server.</span></div>
+          <div class="gl-row"><span class="gl-term">HTTP status codes</span><span class="gl-def">2xx ok, 4xx client (401/403/429), 5xx server (502/503/504).</span></div>
+          <div class="gl-row"><span class="gl-term">Pod IP vs Service IP</span><span class="gl-def">Ephemeral per-pod vs stable load-balanced front.</span></div>
+          <div class="gl-row"><span class="gl-term">CNI / NetworkPolicy</span><span class="gl-def">Wires up pod networking / firewall rules between pods.</span></div>
+          <div class="gl-row"><span class="gl-term">CoreDNS</span><span class="gl-def">In-cluster DNS for Service names.</span></div>
+          <div class="gl-row"><span class="gl-term">Ingress / LoadBalancer</span><span class="gl-def">External HTTP routing into the cluster / external Service exposure.</span></div>
+        </div>
+
+        <h2 class="sec">Interview-readiness recap</h2>
+        <div class="qa">
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>What happens when you hit an API endpoint?</summary><div class="q-body"><p>DNS resolves the host → TCP handshake → TLS → HTTP request → load balancer/ingress routes to a healthy pod → model server processes → response (maybe streamed). Debug by isolating which step is slow/failing.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>API requests time out only in one region — how do you debug?</summary><div class="q-body"><p>Compare regions: DNS/routing, the regional load balancer/endpoint health, firewall/security-group rules, and whether capacity exists there. Reproduce with <span class="k">curl -v</span> from that region.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Pods can't communicate — what layers do you check?</summary><div class="q-body"><p>Are they using the Service (not a stale pod IP)? NetworkPolicies blocking it? CNI healthy? DNS resolving the Service name? Test from inside a pod.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>High latency between client and endpoint — causes?</summary><div class="q-body"><p>Network distance/region routing, overloaded load balancer, or — most often — backend saturation/queueing (Module C). Use <span class="k">curl</span> timing to see if time is in connect vs first-byte.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Service vs Ingress?</summary><div class="q-body"><p>A Service gives a stable internal IP + load balancing across pods; an Ingress routes external HTTP traffic (by host/path) into Services via an ingress controller.</p></div></details>
+        </div>
+
+        <h2 class="sec">Cheat-sheet</h2>
+        <div class="cheat">Request life: DNS -> TCP handshake -> TLS -> HTTP -> LB/Ingress -> pod -> process -> (stream) back
+Isolate the layer:  curl -v &lt;endpoint&gt;   |   nslookup &lt;host&gt;
+504 gateway timeout -> backend overloaded/saturated (capacity)   <- link to Module C
+401/403 -> auth   |   429 -> rate limited   |   502/503 -> backend unreachable/unavailable
+Pods can't talk -> use SERVICE not pod IP | NetworkPolicy | CNI | in-cluster DNS (CoreDNS)
+Connect instant but slow first byte = APP/GPU/queue, NOT network
+<span class="cmt">Region-only failure -> per-region DNS/LB/firewall/capacity differences</span></div>
+
+        <button class="read-toggle" data-read="F"><span class="box">✓</span>Mark this module as studied</button>
+        <div class="foot-nav">
+          <button class="foot-btn" data-go="E"><span class="dir">Previous</span>← E · Storage</button>
+          <button class="foot-btn next" data-go="G"><span class="dir">Next</span>G · Python &amp; API Tools →</button>
+        </div>
+      </section>
+
+      <!-- ============ MODULE G ============ -->
+      <section class="module m-G" data-mod="G">
+        <div class="mod-head">
+          <div class="mod-badge">G</div>
+          <div><h1>Python Debugging + API Tools</h1><div class="mod-sub">The hands-on layer they may test live</div></div>
+        </div>
+        <div class="why"><div class="lbl">Why it matters</div>You don't need to be a software engineer — you need to confidently poke an API with curl, write a small Python script to measure or retry, and read JSON logs quickly. These are the everyday tools of the job.</div>
+
+        <h2 class="sec">Concepts</h2>
+
+        <h3 class="cpt">G1 · curl — first reach for any API problem</h3>
+        <pre class="code"># Verbose: shows DNS, connect, TLS, headers - great for "where does it hang?"
+curl -v https://api.example.com/health
+
+# POST a JSON body to an inference endpoint
+curl -X POST https://api.example.com/v1/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"model":"my-model","prompt":"hello","max_tokens":50}'
+
+# Timing breakdown (connect vs first byte vs total) - the network-vs-app test
+curl -o /dev/null -s -w "dns:%{time_namelookup} connect:%{time_connect} ttfb:%{time_starttransfer} total:%{time_total}\n" https://api.example.com/health</pre>
+        <p>The <span class="k">-v</span> and <span class="k">-w</span> flags directly implement the "which layer is slow?" discipline from Module F. The timing line is genuinely impressive to pull out in an interview.</p>
+
+        <h3 class="cpt">G2 · Postman</h3>
+        <p><span class="term">Postman</span> is a GUI for building, sending, and saving API requests — handy for exploring an API, managing auth tokens, saving collections, and sharing them. Mentally: "curl with a friendly interface and saved history." Know it exists; you can do everything in curl too.</p>
+
+        <h3 class="cpt">G3 · A latency-measuring script (the classic ask)</h3>
+        <pre class="code">import requests, time, statistics
+
+URL = "https://api.example.com/v1/completions"
+HEADERS = {"Authorization": "Bearer TOKEN", "Content-Type": "application/json"}
+PAYLOAD = {"model": "my-model", "prompt": "test", "max_tokens": 16}
+
+latencies, errors = [], 0
+for i in range(100):
+    start = time.time()
+    try:
+        r = requests.post(URL, json=PAYLOAD, headers=HEADERS, timeout=30)
+        r.raise_for_status()
+        latencies.append(time.time() - start)
+    except Exception as e:
+        errors += 1
+        print(f"request {i} failed: {e}")
+
+if latencies:
+    latencies.sort()
+    print(f"count={len(latencies)} errors={errors}")
+    print(f"avg={statistics.mean(latencies):.3f}s")
+    print(f"p50={latencies[len(latencies)//2]:.3f}s")
+    print(f"p95={latencies[int(len(latencies)*0.95)]:.3f}s")</pre>
+        <p>Talking points while writing: measure <span class="hl">percentiles (p95) not just average</span> (the tail is what customers feel — Module C2), count errors separately, and set a <b>timeout</b> so a hung request doesn't freeze your script.</p>
+
+        <h3 class="cpt">G4 · A retry-with-backoff script</h3>
+        <pre class="code">import requests, time
+
+def call_with_retry(url, payload, headers, retries=3, backoff=1.0):
+    for attempt in range(1, retries + 1):
+        try:
+            r = requests.post(url, json=payload, headers=headers, timeout=30)
+            if r.status_code &lt; 500:        # 2xx/4xx -> don't retry client errors
+                return r
+            print(f"attempt {attempt}: server {r.status_code}, retrying")
+        except requests.RequestException as e:
+            print(f"attempt {attempt}: {e}, retrying")
+        time.sleep(backoff * 2 ** (attempt - 1))   # exponential backoff
+    raise RuntimeError("all retries failed")</pre>
+        <p>Key insight to say out loud: <span class="hl">retry 5xx/network errors, but NOT 4xx</span> (a 400/401 won't fix itself), and use <b>exponential backoff</b> so you don't hammer a struggling server (which worsens saturation — Module C5).</p>
+
+        <h3 class="cpt">G5 · Reading JSON logs fast</h3>
+        <pre class="code"># Show only error-level logs, just timestamp and message (jq)
+kubectl logs &lt;pod&gt; | jq 'select(.level=="error") | {ts, msg}'
+
+# Count errors by type
+kubectl logs &lt;pod&gt; | jq -r 'select(.level=="error") | .error_code' | sort | uniq -c | sort -rn</pre>
+        <p>The skill they check: can you go from a wall of logs to "here are the 3 error types and their counts" quickly.</p>
+
+        <h3 class="cpt">G6 · Simulating load</h3>
+        <p>To reproduce "it's slow under load," generate concurrent requests: threads, or a tool like <span class="k">hey</span>/<span class="k">wrk</span>/<span class="k">ab</span> (<span class="k">hey -n 1000 -c 50 &lt;url&gt;</span> = 1000 requests, 50 concurrent). The point: you can <i>reproduce</i> a load problem, not just talk about it.</p>
+
+        <h2 class="sec">Glossary</h2>
+        <div class="glossary">
+          <div class="gl-row"><span class="gl-term">curl -v / -w</span><span class="gl-def">Verbose (see each layer) / timing breakdown (connect vs first byte vs total).</span></div>
+          <div class="gl-row"><span class="gl-term">Postman</span><span class="gl-def">GUI for building/saving API requests.</span></div>
+          <div class="gl-row"><span class="gl-term">requests</span><span class="gl-def">Python's standard HTTP library.</span></div>
+          <div class="gl-row"><span class="gl-term">percentiles (p95)</span><span class="gl-def">The slow-tail latency customers actually feel.</span></div>
+          <div class="gl-row"><span class="gl-term">exponential backoff</span><span class="gl-def">Increasing wait between retries.</span></div>
+          <div class="gl-row"><span class="gl-term">jq</span><span class="gl-def">Command-line JSON parser for fast log filtering.</span></div>
+          <div class="gl-row"><span class="gl-term">hey/wrk/ab</span><span class="gl-def">Quick load-generation tools.</span></div>
+        </div>
+
+        <h2 class="sec">Interview-readiness recap</h2>
+        <div class="qa">
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Write a script to measure API latency over 100 requests.</summary><div class="q-body"><p>Loop requests, time each, store latencies, report avg AND p50/p95, count errors separately, set a timeout. (See G3 — be ready to type it.)</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>How would you debug a failing inference API with curl?</summary><div class="q-body"><p><span class="k">curl -v</span> to see where it fails (DNS/connect/TLS/HTTP) and the status code; <span class="k">curl -w</span> for the timing breakdown to tell network from backend; resend the exact failing payload to reproduce; check headers/auth.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>How do you simulate load on an endpoint?</summary><div class="q-body"><p>Concurrent requests via threads or a tool like <span class="k">hey</span>/<span class="k">wrk</span> (e.g., <span class="k">hey -n 1000 -c 50</span>), then watch latency percentiles and error rate climb.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>How do you read noisy JSON logs?</summary><div class="q-body"><p>Filter with <span class="k">jq</span> or a small Python loop — select error level, group/count by error type — to get signal fast instead of scrolling.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Good instincts to voice</summary><div class="q-body"><p>Retry 5xx/network not 4xx, use exponential backoff, always set timeouts, measure p95 not just averages.</p></div></details>
+        </div>
+
+        <h2 class="sec">Cheat-sheet</h2>
+        <div class="cheat">curl -v &lt;url&gt;                 -> see DNS/connect/TLS/HTTP layer where it fails
+curl -w timing                -> connect vs ttfb vs total = network vs backend
+requests.post(..., timeout=)  -> ALWAYS set a timeout
+Latency script: collect times -> report avg + p50/p95 + error count (p95 = what users feel)
+Retries: retry 5xx/network, NOT 4xx, with exponential backoff (don't hammer a sick server)
+JSON logs: jq 'select(.level=="error")' | sort | uniq -c   -> counts by error type
+<span class="cmt">Load test: hey -n 1000 -c 50 &lt;url&gt;  (reproduce, don't just theorize)</span></div>
+
+        <button class="read-toggle" data-read="G"><span class="box">✓</span>Mark this module as studied</button>
+        <div class="foot-nav">
+          <button class="foot-btn" data-go="F"><span class="dir">Previous</span>← F · Networking</button>
+          <button class="foot-btn next" data-go="H"><span class="dir">Next</span>H · Observability →</button>
+        </div>
+      </section>
+
+      <!-- ============ MODULE H ============ -->
+      <section class="module m-H" data-mod="H">
+        <div class="mod-head">
+          <div class="mod-badge">H</div>
+          <div><h1>Observability &amp; Debugging</h1><div class="mod-sub">Your home turf — lead with this strength</div></div>
+        </div>
+        <div class="why"><div class="lbl">Why it matters</div>This is your home turf (Grafana/Datadog/Prometheus) and the glue across every module — observability is <i>how you actually see</i> the GPU, K8s, inference, storage, and network problems you've learned to reason about.</div>
+
+        <h2 class="sec">Concepts</h2>
+
+        <h3 class="cpt">H1 · Logs vs Metrics vs Traces</h3>
+        <p><span class="term">Logs</span> = discrete event records ("request failed: CUDA OOM at 10:42") — best for <i>what exactly happened</i>. <span class="term">Metrics</span> = numbers over time (GPU util %, latency p95, queue length) — best for trends, alerting, "is it healthy right now?" <span class="term">Traces</span> = the path of a single request across components with per-hop timing — best for "where did the time go?" <span class="hl">Metrics tell you something is wrong and when; traces tell you where; logs tell you why.</span></p>
+
+        <h3 class="cpt">H2 · The GPU/inference metrics that matter</h3>
+        <p>On top of CPU/mem/disk: <span class="term">GPU utilization (%)</span> — low with traffic = the GPU is starved (batching off, or CPU/net/storage bottleneck); high (90%+) with rising latency = saturation. <span class="term">GPU memory (VRAM)</span> — climbing toward the limit predicts OOM; a steady climb that never drops suggests a <b>leak</b>. <span class="term">Latency p50/p95/p99</span> — the customer-felt numbers. <span class="term">Queue length</span> — backlog; the early warning before timeouts. <span class="term">Throughput</span> and <span class="term">error rate</span> (by type). The key skill: <span class="hl">low vs high GPU utilization points you in opposite directions</span> — low + slow = feeding bottleneck; high + slow = the GPU is the bottleneck (need capacity).</p>
+
+        <h3 class="cpt">H3 · The tools</h3>
+        <p><span class="term">Prometheus</span> collects/stores time-series metrics (query with PromQL; the DCGM exporter feeds GPU metrics in — good to name-drop). <span class="term">Grafana</span> = dashboards + alerts on top. <span class="term">Datadog</span> = all-in-one metrics + logs + traces. <span class="k">kubectl logs</span> / <span class="k">kubectl top</span> = quick no-dashboard checks.</p>
+
+        <h3 class="cpt">H4 · A debugging method that ties it all together</h3>
+        <p>Work the funnel (the senior mindset they're hiring for): 1) <b>Scope it</b> — isolated (one user/pod/node) or systemic? 2) <b>What changed?</b> — recent deploy, config, traffic spike, scale event? 3) <b>Which layer?</b> — compute, scheduling, network, storage, or app? 4) <b>Confirm with the right signal</b> — metrics to localize, traces to find the slow hop, logs to read the actual error. 5) <span class="hl">Mitigate then RCA</span> — stop the bleeding for the customer first (scale up, roll back, reroute, shed load), then root-cause.</p>
+
+        <h3 class="cpt">H5 · Debugging with limited signal</h3>
+        <p>A realistic curveball: "you only have logs — debug it." Reconstruct the timeline (when did errors start?), group errors by type/frequency (Module G's <span class="k">jq</span>), correlate with any change, and form a hypothesis you can test (reproduce with curl). Show you can still reason without a perfect dashboard.</p>
+
+        <h2 class="sec">Glossary</h2>
+        <div class="glossary">
+          <div class="gl-row"><span class="gl-term">Logs/Metrics/Traces</span><span class="gl-def">Why happened / trend &amp; health / where time went.</span></div>
+          <div class="gl-row"><span class="gl-term">GPU utilization</span><span class="gl-def">Busy %; low+slow = starved, high+slow = saturated.</span></div>
+          <div class="gl-row"><span class="gl-term">VRAM trend</span><span class="gl-def">Rising-and-not-dropping hints at a leak; near-limit predicts OOM.</span></div>
+          <div class="gl-row"><span class="gl-term">p95/p99, queue, throughput, error rate</span><span class="gl-def">Core inference metrics.</span></div>
+          <div class="gl-row"><span class="gl-term">Prometheus/Grafana/Datadog</span><span class="gl-def">Collect / visualize+alert / all-in-one.</span></div>
+          <div class="gl-row"><span class="gl-term">DCGM exporter</span><span class="gl-def">Feeds NVIDIA GPU metrics into Prometheus.</span></div>
+          <div class="gl-row"><span class="gl-term">Mitigate-then-RCA</span><span class="gl-def">Stop customer pain first, root-cause after.</span></div>
+        </div>
+
+        <h2 class="sec">Interview-readiness recap</h2>
+        <div class="qa">
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Logs vs metrics vs traces?</summary><div class="q-body"><p>Metrics = numbers over time (health/trends/alerts); traces = one request's path and where time went; logs = the detailed record of what/why. Use metrics to detect, traces to localize, logs to explain.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>What do you monitor in a GPU cluster?</summary><div class="q-body"><p>GPU utilization, VRAM usage, latency p95/p99, queue length, throughput, error rate — plus normal CPU/mem/disk and node health.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>GPU cluster slow but CPU is fine — what metrics?</summary><div class="q-body"><p>GPU utilization (low = starved/feeding bottleneck; high = saturation), queue length (backlog), VRAM (pressure/leak), latency percentiles, and recent traffic/deploy changes.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>High GPU memory usage indicates what?</summary><div class="q-body"><p>Approaching OOM; if it climbs and never releases, suspect a leak; could also mean batch size or too many replicas per GPU.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Debug a production issue with only logs?</summary><div class="q-body"><p>Build a timeline from log timestamps, group errors by type/frequency, correlate with changes, form and test a hypothesis (reproduce). Show structured reasoning despite limited signal.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>How would you monitor a 100-node GPU cluster?</summary><div class="q-body"><p>Per-node + fleet-wide GPU/VRAM/latency/queue metrics into Prometheus (via DCGM exporter), Grafana dashboards + alerts on saturation/OOM/error-rate/node-down, log aggregation, and auto-detection of unhealthy nodes.</p></div></details>
+        </div>
+
+        <h2 class="sec">Cheat-sheet</h2>
+        <div class="cheat">Metrics = detect & trend  |  Traces = where time went  |  Logs = what & why
+GPU util LOW + slow  -> GPU STARVED (batching off / CPU.net.storage bottleneck feeding it)
+GPU util HIGH + slow -> SATURATION (add capacity, better batching, shed load)
+VRAM rising, never drops -> memory LEAK   |   VRAM near limit -> OOM incoming
+Watch: GPU util, VRAM, p95/p99 latency, queue length, throughput, error rate
+Stack: Prometheus (collect, +DCGM for GPU) -> Grafana (dashboards/alerts) | Datadog (all-in-one)
+<span class="cmt">Incident funnel: scope -> what changed -> which layer -> confirm w/ signal -> MITIGATE then RCA</span></div>
+
+        <button class="read-toggle" data-read="H"><span class="box">✓</span>Mark this module as studied</button>
+        <div class="foot-nav">
+          <button class="foot-btn" data-go="G"><span class="dir">Previous</span>← G · Python &amp; API Tools</button>
+          <button class="foot-btn next" data-go="connect"><span class="dir">Next</span>Putting It Together →</button>
+        </div>
+      </section>
+
+      <!-- ============ PUTTING IT TOGETHER ============ -->
+      <section class="module" data-mod="connect">
+        <div class="mod-head">
+          <div class="mod-badge">∞</div>
+          <div><h1>Putting It Together</h1><div class="mod-sub">How the modules connect + your 4-week path</div></div>
+        </div>
+
+        <div class="why"><div class="lbl">The big picture</div>The reason this role is debuggable is that all 8 areas chain together. Internalize these cross-links and you'll sound senior.</div>
+
+        <h2 class="sec">How the modules connect</h2>
+        <div class="link-grid">
+          <div class="link-card"><b>Slow inference</b> (C) → check <b>GPU utilization</b> (H): low = a <b>feeding bottleneck</b>, often <b>storage</b> (E) or <b>network/CPU</b> (F); high = <b>saturation/queue</b> (C) needing <b>K8s scaling</b> (B).</div>
+          <div class="link-card"><b>OOM crash</b> (A) → in K8s shows as <b>OOMKilled</b> (B); on long requests it's the <b>KV cache</b> (C); you see it coming in <b>VRAM metrics</b> (H).</div>
+          <div class="link-card"><b>Pending pod</b> (B) → no free <b>GPU</b> or a scheduling/taint issue (B), conceptually mirrored by a <b>queued SLURM job</b> (D).</div>
+          <div class="link-card"><b>API timeout</b> (F) → could be <b>DNS/TCP/LB</b> (F) or a <b>saturated backend</b> (C); <span class="k">curl -v/-w</span> (G) tells you which; metrics/logs (H) confirm.</div>
+          <div class="link-card"><b>Slow cold start</b> (A/C) → almost always <b>storage</b> (E), visible as idle-but-stuck GPUs (D/H).</div>
+        </div>
+
+        <h2 class="sec">A focused 4-week path</h2>
+        <div class="weeks">
+          <div class="week"><div class="wk">Week 1 · Foundations</div>Module A (read twice — your real gap), Module F (request lifecycle), Module G (get fluent with curl).</div>
+          <div class="week"><div class="wk">Week 2 · K8s for AI</div>Module B deeply; spin up minikube/kind and deliberately cause Pending, CrashLoopBackOff, OOMKilled — read them with <span class="k">describe</span>/<span class="k">logs</span>.</div>
+          <div class="week"><div class="wk">Week 3 · Inference &amp; infra</div>Modules C, D, E; build a small FastAPI "inference" service, add the Module G latency + retry scripts, simulate latency/saturation.</div>
+          <div class="week"><div class="wk">Week 4 · Support mastery</div>Module H; practice the incident funnel out loud on each scenario, rehearse mitigate-then-RCA framing.</div>
+        </div>
+
+        <h2 class="sec">Your positioning in one line</h2>
+        <div class="posline">"I'm a distributed-systems engineer who debugs production workloads — saturation, backlogs, resource pressure, observability. A GPU cluster is the same shapes of problems with GPU/VRAM as the scarce resource and inference as the workload." That sentence turns your Kafka/K8s/observability background into exactly what they're hiring for.</div>
+
+        <div class="foot-nav">
+          <button class="foot-btn" data-go="H"><span class="dir">Previous</span>← H · Observability</button>
+          <button class="foot-btn next" data-go="start"><span class="dir">Back to</span>Start Here ↺</button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+const NAV = [
+  {id:'start', tag:'★', label:'Start Here', track:false},
+  {id:'A', tag:'A', label:'GPU + AI Infrastructure', track:true},
+  {id:'B', tag:'B', label:'Kubernetes for AI', track:true},
+  {id:'C', tag:'C', label:'Inference Serving', track:true},
+  {id:'D', tag:'D', label:'HPC / Cluster', track:true},
+  {id:'E', tag:'E', label:'Storage', track:true},
+  {id:'F', tag:'F', label:'Networking', track:true},
+  {id:'G', tag:'G', label:'Python & API Tools', track:true},
+  {id:'H', tag:'H', label:'Observability', track:true},
+  {id:'connect', tag:'∞', label:'Putting It Together', track:false},
+];
+const read = {};
+const navEl = document.getElementById('nav');
+
+NAV.forEach(n=>{
+  const b=document.createElement('button');
+  b.className='nav-item'; b.dataset.go=n.id;
+  b.innerHTML=`<span class="nav-tag">${n.tag}</span><span>${n.label}</span><span class="check">✓</span>`;
+  navEl.appendChild(b);
+});
+
+function show(id){
+  document.querySelectorAll('.module').forEach(m=>m.classList.toggle('active', m.dataset.mod===id));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.go===id));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function updateProgress(){
+  const total=NAV.filter(n=>n.track).length;
+  const done=Object.values(read).filter(Boolean).length;
+  document.getElementById('progText').textContent=`${done} / ${total}`;
+  document.getElementById('progFill').style.width=`${(done/total)*100}%`;
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('read', !!read[n.dataset.go]));
+}
+
+document.addEventListener('click',e=>{
+  const go=e.target.closest('[data-go]');
+  if(go){ show(go.dataset.go); return; }
+  const rt=e.target.closest('[data-read]');
+  if(rt){
+    const id=rt.dataset.read;
+    read[id]=!read[id];
+    rt.classList.toggle('on', read[id]);
+    rt.querySelector('span:last-child').textContent = read[id] ? 'Studied — nice work' : 'Mark this module as studied';
+    updateProgress();
+  }
+});
+
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='SUMMARY') return;
+  const order=NAV.map(n=>n.id);
+  const cur=document.querySelector('.module.active').dataset.mod;
+  const i=order.indexOf(cur);
+  if(e.key==='ArrowRight'&&i<order.length-1) show(order[i+1]);
+  if(e.key==='ArrowLeft'&&i>0) show(order[i-1]);
+});
+
+updateProgress();
+
+// --- PDF export: reveal all modules + open all Q&A for print ---
+let _printState=null;
+function expandForPrint(){
+  _printState=[...document.querySelectorAll('details.q')].map(d=>d.open);
+  document.querySelectorAll('details.q').forEach(d=>d.open=true);
+}
+function restoreAfterPrint(){
+  if(!_printState) return;
+  document.querySelectorAll('details.q').forEach((d,idx)=>d.open=_printState[idx]);
+  _printState=null;
+}
+window.addEventListener('beforeprint',expandForPrint);
+window.addEventListener('afterprint',restoreAfterPrint);
+
+if(window.GleanBridge){
+  window.GleanBridge.postMessage({actionId:'export-pdf',type:'glean-add-menu',metadata:{label:'Export as PDF',icon:'export'}});
+  window.GleanBridge.onMessage('action',function(data){ if(data.actionId==='export-pdf') window.print(); });
+}
+</script>
+</body>
+</html>
