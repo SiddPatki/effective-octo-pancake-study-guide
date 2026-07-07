@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -41,6 +40,11 @@ html[data-theme='dark']{
 .m-F{--accent:#1b9e8a;--accent-soft:#e2f5f1} html[data-theme='dark'] .m-F{--accent-soft:#0d2e28}
 .m-G{--accent:#6b4ce6;--accent-soft:#efeafe} html[data-theme='dark'] .m-G{--accent-soft:#221842}
 .m-H{--accent:#c0392b;--accent-soft:#fbe9e7} html[data-theme='dark'] .m-H{--accent-soft:#34110d}
+.m-I{--accent:#0f7fb5;--accent-soft:#e1f1f9} html[data-theme='dark'] .m-I{--accent-soft:#08293a}
+.m-J{--accent:#9b3dca;--accent-soft:#f4e9fb} html[data-theme='dark'] .m-J{--accent-soft:#2a1338}
+.m-K{--accent:#0d8a6a;--accent-soft:#e0f4ee} html[data-theme='dark'] .m-K{--accent-soft:#082b21}
+.m-L{--accent:#b5651d;--accent-soft:#f8ecdd} html[data-theme='dark'] .m-L{--accent-soft:#33200a}
+.m-M{--accent:#4b8b1f;--accent-soft:#eaf4e0} html[data-theme='dark'] .m-M{--accent-soft:#1b2b0c}
 
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -217,7 +221,7 @@ pre.code{
     <div class="brand">Interview Prep</div>
     <p class="brand-title">Together AI · GPU &amp; Inference Support</p>
     <div class="progress-wrap">
-      <div class="progress-label"><span>Modules studied</span><span id="progText">0 / 8</span></div>
+      <div class="progress-label"><span>Modules studied</span><span id="progText">0 / 13</span></div>
       <div class="progress-bar"><div class="progress-fill" id="progFill"></div></div>
     </div>
     <nav id="nav"></nav>
@@ -845,6 +849,384 @@ Stack: Prometheus (collect, +DCGM for GPU) -> Grafana (dashboards/alerts) | Data
         <button class="read-toggle" data-read="H"><span class="box">✓</span>Mark this module as studied</button>
         <div class="foot-nav">
           <button class="foot-btn" data-go="G"><span class="dir">Previous</span>← G · Python &amp; API Tools</button>
+          <button class="foot-btn next" data-go="I"><span class="dir">Next</span>I · LLM Behaviour & Errors →</button>
+        </div>
+      </section>
+
+      <section class="module m-I" data-mod="I">
+        <div class="mod-head">
+          <div class="mod-badge">I</div>
+          <div><h1>LLM Behaviour, Diagnostics &amp; Error Codes</h1><div class="mod-sub">Bug vs normal vs platform — the day job</div></div>
+        </div>
+        <div class="why"><div class="lbl">Why it matters</div>This is the module closest to the <i>actual day job</i> at Together AI. Customers call the inference API, something misbehaves, and you have to tell them <b>whether it's their request, the model's nature, or the platform</b> — fast. Half of support is knowing what an error code really means and which side of the fence the fix lives on. The other half is knowing which "bugs" are actually just how LLMs behave.</div>
+
+        <h2 class="sec">Concepts</h2>
+
+        <h3 class="cpt">I1 · How an LLM actually behaves (so you can tell "bug" from "normal")</h3>
+        <p>LLMs are <b>probabilistic next-token predictors</b>, not deterministic functions. Internalize these behaviours or you'll chase non-bugs:</p>
+        <ul><li><b>Non-determinism</b> — the same prompt can give different answers across calls. This is <i>expected</i> when sampling is on (temperature &gt; 0). "I get different outputs each time" is usually not a bug (see Module K for the knobs).</li><li><b>Hallucination</b> — the model can produce fluent, confident, wrong content. It's a property of the technology, not a platform fault. You can't "fix" it in support; you mitigate with prompting, grounding/RAG, and lower temperature.</li><li><b>Context is finite</b> — the model only "sees" what's in the current context window. It has no memory between calls unless the caller resends history. "It forgot what I told it earlier" = the client isn't sending prior turns.</li><li><b>Prompt-sensitivity</b> — small wording/format changes shift output a lot. A customer whose quality "suddenly dropped" often changed their prompt or system message.</li><li><b>Repetition / degeneration</b> — models can loop or ramble, especially at high temperature or with no repetition penalty, or when pushed past what they handle well.</li><li><b>Refusals</b> — safety-tuned models decline some requests. A refusal is model behaviour, not an API error (still a 200 OK).</li></ul>
+        <p>The support reflex: <b>a valid-but-disappointing response is a model/prompt issue (HTTP 200); a failed response is an API/platform issue (non-200).</b> That single split routes most tickets.</p>
+
+        <h3 class="cpt">I2 · The inference infrastructure, end to end</h3>
+        <p>When a customer request hits Together AI, it roughly travels: <b>API gateway/auth → rate limiter → router (which model, which endpoint) → queue → inference server (e.g. vLLM) on a GPU node → model (weights in VRAM) → response (often streamed back)</b>. Two deployment shapes matter (detailed in Module K):</p>
+        <ul><li><b>Serverless / shared</b> — many customers share pooled capacity for a model. Elastic, pay-per-token, but subject to shared load (noisy neighbours, queueing under spikes).</li><li><b>Dedicated endpoints</b> — capacity reserved for one customer. Predictable performance, no noisy neighbours, but you pay for idle and must size it.</li></ul>
+        <p>Knowing the path means you can localize: auth problem (front), 429 (rate limiter), slow first token (queue/cold start), slow generation (decode/GPU), truncated output (token limits), dropped stream (network/proxy).</p>
+
+        <h3 class="cpt">I3 · The diagnostic framework — five questions, in order</h3>
+        <p>For <i>any</i> inference ticket, ask these in sequence. It mirrors the incident funnel (Module H) but tuned for the API:</p>
+        <ol><li><b>Is it a failed call or a bad response?</b> Non-200 → platform/request. 200 but unhappy → model/prompt.</li><li><b>What's the exact status code + error body?</b> The body usually names the cause (see I4). Always get it.</li><li><b>Isolated or systemic?</b> One API key/model/region, or everything? Reproduce with <span class="k">curl</span>.</li><li><b>What changed?</b> New prompt, longer inputs, higher traffic, a model version/deprecation, new SDK.</li><li><b>Where in the path?</b> Auth → rate limit → queue/cold start → generation → streaming/network.</li></ol>
+
+        <h3 class="cpt">I4 · Error codes — the ones you'll actually see, and what they mean</h3>
+        <p>HTTP status tells you <i>which side owns the fix</i>. <b>4xx = the caller's request; 5xx = the server/platform.</b> The high-value ones for an inference API:</p>
+        <ul><li><b>400 Bad Request</b> — malformed request: bad JSON, wrong field, invalid parameter combo (e.g. <span class="k">temperature</span> out of range). <i>Caller fix.</i></li><li><b>401 Unauthorized</b> — missing/invalid/expired API key. Check the <span class="k">Authorization: Bearer</span> header. <i>Caller fix.</i></li><li><b>403 Forbidden</b> — authenticated but not allowed: no access to that model, org/billing issue, region restriction. <i>Caller/account fix.</i></li><li><b>404 Not Found</b> — usually a <b>wrong or deprecated model name</b>, or wrong endpoint path. Very common — model IDs change and get retired. <i>Caller fix (update model name).</i></li><li><b>413 / "context length exceeded" (often 400/422)</b> — <b>input + requested <span class="k">max_tokens</span> exceeds the model's context window.</b> Extremely common. Fix: shorten prompt, lower <span class="k">max_tokens</span>, or use a longer-context model. <i>Caller fix</i> (but you diagnose it).</li><li><b>422 Unprocessable Entity</b> — request is well-formed but semantically invalid (e.g. a parameter the model doesn't support). <i>Caller fix.</i></li><li><b>429 Too Many Requests</b> — <b>rate limit hit</b> (requests-per-minute or tokens-per-minute) or, on shared capacity, <b>model overloaded</b>. Respect <span class="k">Retry-After</span>, back off with jitter, or request a higher limit / move to a dedicated endpoint. <i>Caller mitigates; platform may need capacity.</i></li><li><b>500 Internal Server Error</b> — something broke server-side. Usually transient; retry with backoff. If persistent, it's a platform incident. <i>Platform fix.</i></li><li><b>502 Bad Gateway / 503 Service Unavailable</b> — an upstream/inference server is unreachable or overloaded, or capacity is scaling. Often transient; retry. <i>Platform fix.</i></li><li><b>504 Gateway Timeout</b> — the backend didn't respond in time: a very long generation, an overloaded/saturated model, or a cold start. Reduce <span class="k">max_tokens</span>, stream, or retry. <i>Platform + caller.</i></li></ul>
+        <p>Memory hook: <b>401/403 = keys/permissions, 404 = model name, 429 = slow down, 400/422/context = fix the request, 5xx = our side.</b></p>
+
+        <h3 class="cpt">I5 · Troubleshooting playbooks (symptom → likely cause → action)</h3>
+        <ul><li><b>"All my calls return 401"</b> → key wrong/expired/not sent → verify the <span class="k">Authorization</span> header and that the key is active; reproduce with <span class="k">curl</span>.</li><li><b>"404 model not found"</b> → wrong or <b>deprecated model ID</b> → confirm the exact current model name from the model list; check deprecation notices.</li><li><b>"Getting 429s"</b> → rate limit or overload → check RPM/TPM vs their traffic; add backoff + jitter; batch or spread load; raise limits or move to dedicated.</li><li><b>"context length exceeded"</b> → prompt + <span class="k">max_tokens</span> &gt; window → count tokens; trim history/prompt; lower <span class="k">max_tokens</span>; or switch to a longer-context model.</li><li><b>"Responses are truncated / cut off mid-sentence"</b> → hit <span class="k">max_tokens</span> (or the model emitted a stop sequence) → raise <span class="k">max_tokens</span>, check <span class="k">finish_reason</span> (<span class="k">length</span> vs <span class="k">stop</span>), check <span class="k">stop</span> settings.</li><li><b>"First token is very slow, then it's fine"</b> → cold start / queue on shared capacity → expect it after idle; dedicated endpoint or keep-warm helps.</li><li><b>"Generation itself is slow"</b> → long output (decode), big model, or saturation → smaller/faster model, stream, reduce <span class="k">max_tokens</span>, or dedicated capacity.</li><li><b>"Streaming just stops / connection drops"</b> → proxy/load-balancer buffering or client timeout, not the model → check client read timeout, disable proxy buffering, confirm SSE handling.</li><li><b>"Outputs changed / got worse with no code change on our side"</b> → prompt change, longer inputs, sampling settings, or a model version update/deprecation → diff their request; check model version; pin a version if available.</li><li><b>"Same prompt, different answers"</b> → sampling on (temperature &gt; 0) → this is normal; set <span class="k">temperature=0</span> (or low) + fixed <span class="k">seed</span> if supported for reproducibility.</li><li><b>"Empty response / just whitespace"</b> → stop sequence triggered immediately, <span class="k">max_tokens</span> too low, or a bad chat template → check <span class="k">finish_reason</span>, <span class="k">max_tokens</span>, and prompt formatting (Module J).</li></ul>
+
+        <h2 class="sec">Glossary</h2>
+        <div class="glossary">
+          <div class="gl-row"><span class="gl-term">Non-determinism</span><span class="gl-def">same prompt, different output when sampling is on; expected.</span></div>
+          <div class="gl-row"><span class="gl-term">Hallucination</span><span class="gl-def">confident wrong output; a model property, not a platform bug.</span></div>
+          <div class="gl-row"><span class="gl-term">Context window</span><span class="gl-def">max tokens (input + output) the model can handle at once.</span></div>
+          <div class="gl-row"><span class="gl-term">finish_reason</span><span class="gl-def">why generation stopped: <span class="k">stop</span> (natural/stop seq) vs <span class="k">length</span> (hit <span class="k">max_tokens</span>).</span></div>
+          <div class="gl-row"><span class="gl-term">4xx vs 5xx</span><span class="gl-def">caller's request problem vs server/platform problem.</span></div>
+          <div class="gl-row"><span class="gl-term">Rate limit (RPM/TPM)</span><span class="gl-def">requests- or tokens-per-minute cap → 429 when exceeded.</span></div>
+          <div class="gl-row"><span class="gl-term">Deprecated model</span><span class="gl-def">retired model ID; a top cause of sudden 404s.</span></div>
+        </div>
+
+        <h2 class="sec">Interview-readiness recap</h2>
+        <div class="qa">
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>A customer says the API is 'broken.' First questions?</summary><div class="q-body"><p>Failed call or bad response? Exact status code + error body? Isolated or systemic? What changed? Where in the path (auth → rate limit → queue → generation → streaming)? Reproduce with <span class="k">curl</span>.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>What does a 429 mean and what do you tell the customer?</summary><div class="q-body"><p>Rate limit or model overload. Respect <span class="k">Retry-After</span>, add exponential backoff with jitter, spread/batch load; if sustained, raise limits or move to a dedicated endpoint. Check their RPM/TPM against actual traffic.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Customer gets 'context length exceeded' — walk me through it.</summary><div class="q-body"><p>Input tokens + <span class="k">max_tokens</span> exceed the model's window. Count tokens, trim the prompt/history, lower <span class="k">max_tokens</span>, or move to a longer-context model. It's a request fix, but I'd help them diagnose and show how to count tokens.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>How do you tell a platform issue from a customer issue?</summary><div class="q-body"><p>Status code: 4xx = their request (fix: keys, model name, params, token budget); 5xx = our platform (retry, then escalate as an incident). A 200 with disappointing content is a model/prompt issue, not an outage.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Customer says outputs got worse with no change on their side — what do you check?</summary><div class="q-body"><p>Diff the actual request (prompt/system message/params), check input length growth, sampling settings, and whether the model version changed or is being deprecated. Suggest pinning a version and lowering temperature for consistency.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Same prompt gives different answers — bug?</summary><div class="q-body"><p>No — that's sampling (temperature &gt; 0). For reproducibility set temperature to 0 (or low) and a fixed seed if supported. Explain LLMs are probabilistic by design.</p></div></details>
+        </div>
+
+        <h2 class="sec">Cheat-sheet</h2>
+        <div class="cheat">Split first: FAILED call (non-200 = platform/request) vs BAD response (200 = model/prompt)
+4xx = caller's request | 5xx = our platform
+401/403 → keys/permissions   404 → wrong/DEPRECATED model name
+400/422 → malformed/invalid request   "context length exceeded" → prompt+max_tokens &gt; window
+429 → rate limit / overload → Retry-After + backoff+jitter, spread load, or go dedicated
+500/502/503 → transient platform → retry w/ backoff; persistent = incident
+504 → backend too slow: long gen / saturation / cold start → lower max_tokens, stream, retry
+Truncated output → hit max_tokens (check finish_reason: length vs stop)
+Different answers same prompt → sampling (temp&gt;0), NORMAL → temp=0 + seed for repeatable
+Streaming drops → proxy buffering / client timeout, NOT the model
+Diagnostic order: failed-or-bad? → status+body → isolated-or-systemic? → what changed? → where in path?</div>
+
+        <button class="read-toggle" data-read="I"><span class="box">✓</span>Mark this module as studied</button>
+        <div class="foot-nav">
+          <button class="foot-btn" data-go="M"><span class="dir">Previous</span>← M · nvidia-smi</button>
+          <button class="foot-btn next" data-go="J"><span class="dir">Next</span>J · Chat Templates →</button>
+        </div>
+      </section>
+
+      <section class="module m-J" data-mod="J">
+        <div class="mod-head">
+          <div class="mod-badge">J</div>
+          <div><h1>Chat Templates</h1><div class="mod-sub">How messages become the string a model expects</div></div>
+        </div>
+        <div class="why"><div class="lbl">Why it matters</div>This is a genuinely under-appreciated source of "the model is dumb" tickets — and a great topic to sound sharp on. Chat models are trained to expect a <b>very specific text format</b> with special tokens marking who said what. If the prompt is assembled wrong, the model gets confused, ignores the system prompt, rambles, or won't stop. When a customer uses the raw completions endpoint or self-hosts, chat templates become <i>their</i> responsibility — and yours to debug.</div>
+
+        <h2 class="sec">Concepts</h2>
+
+        <h3 class="cpt">J1 · What a chat template actually is</h3>
+        <p>Under the hood, a chat model doesn't see "roles" like <span class="k">system</span>/<span class="k">user</span>/<span class="k">assistant</span>. It sees <b>one flat string of tokens</b>. A <b>chat template</b> is the rule that turns a structured conversation (a list of role+content messages) into that exact string, inserting the <b>special tokens</b> the model was trained on to mark turn boundaries.</p>
+        <p>Two levels to keep straight:</p>
+        <ul><li><b>The Chat Completions API (<span class="k">/v1/chat/completions</span>)</b> — you send structured <span class="k">messages</span> (<span class="k">[{"role":"system",...},{"role":"user",...}]</span>) and <b>the server applies the correct chat template for you</b>. This is the easy, recommended path; most template bugs disappear here.</li><li><b>The raw Completions / self-hosted path</b> — you send a single <span class="k">prompt</span> string and <b>you</b> must format it with the model's template yourself. Get it wrong and quality tanks. This is where template tickets come from.</li></ul>
+
+        <h3 class="cpt">J2 · Why the format is so strict</h3>
+        <p>Each model family was fine-tuned on its own template. The special tokens (turn markers, role headers, end-of-turn markers) are how the model learned "this is where the user's turn ends and mine begins." If you:</p>
+        <ul><li><b>use the wrong family's template</b> → the model sees unfamiliar tokens and behaves erratically;</li><li><b>forget the end-of-turn token</b> → the model may not know when to stop (runs on, or answers as the user);</li><li><b>skip the assistant-turn header</b> → the model may not realize it's its turn to speak;</li><li><b>duplicate or mis-nest tokens</b> → confusion, ignored system prompt.</li></ul>
+        <p>Different families use different schemes — <b>Llama 3</b> uses <span class="k">&lt;|begin_of_text|&gt;</span> and <span class="k">&lt;|start_header_id|&gt;role&lt;|end_header_id|&gt;</span> with <span class="k">&lt;|eot_id|&gt;</span>; <b>ChatML</b> (used by Qwen and others) uses <span class="k">&lt;|im_start|&gt;role ... &lt;|im_end|&gt;</span>; <b>Mistral/Mixtral</b> use <span class="k">[INST] ... [/INST]</span>. You don't need to memorize every one — you need to know they <b>differ per model and must match exactly.</b></p>
+
+        <h3 class="cpt">J3 · The system / user / assistant roles</h3>
+        <ul><li><b>system</b> — instructions and persona ("You are a helpful assistant that answers in JSON"). Sets behaviour for the whole conversation.</li><li><b>user</b> — the human's messages.</li><li><b>assistant</b> — the model's previous replies (you resend these to give it memory of the conversation).</li></ul>
+        <p>For multi-turn chat, the client resends the <b>whole message list</b> each call (system + all prior user/assistant turns + new user turn). This is why "it forgot" happens — the client didn't include history (link to Module I1).</p>
+
+        <h3 class="cpt">J4 · Common chat-template failures (and the fix)</h3>
+        <ul><li><b>Model won't stop / keeps generating / answers as the user</b> → missing end-of-turn token or missing assistant header in a hand-built prompt → use the Chat Completions API, or apply the model's exact template (and set correct <span class="k">stop</span> tokens).</li><li><b>System prompt ignored</b> → template put the system message somewhere the model doesn't expect, or the model family handles system prompts differently → verify the template; some models fold system into the first user turn.</li><li><b>Garbled / erratic output on a self-hosted model</b> → wrong template for that model → match the template to the exact model.</li><li><b>Special tokens showing up as literal text in the output</b> → tokenization/template mismatch → confirm the tokenizer and template are the model's own.</li><li><b>Tool/function calling not working</b> → tool-calling has its own template/format per model → follow that model's tool-format spec.</li></ul>
+        <p>The golden rule to say out loud: <b>prefer the Chat Completions API so the server owns the template; only hand-format when self-hosting, and then match the model's template exactly.</b></p>
+
+        <h2 class="sec">Glossary</h2>
+        <div class="glossary">
+          <div class="gl-row"><span class="gl-term">Chat template</span><span class="gl-def">rule that renders structured messages into the exact token string a model expects.</span></div>
+          <div class="gl-row"><span class="gl-term">Special tokens</span><span class="gl-def">reserved markers for turn/role boundaries (e.g. <span class="k">&lt;|eot_id|&gt;</span>, <span class="k">&lt;|im_end|&gt;</span>).</span></div>
+          <div class="gl-row"><span class="gl-term">ChatML</span><span class="gl-def">a common template format (<span class="k">&lt;|im_start|&gt;role … &lt;|im_end|&gt;</span>), used by Qwen and others.</span></div>
+          <div class="gl-row"><span class="gl-term">Roles (system/user/assistant)</span><span class="gl-def">instructions / human turns / model's prior turns.</span></div>
+          <div class="gl-row"><span class="gl-term">Chat vs raw Completions</span><span class="gl-def">server applies the template for you vs you format the prompt yourself.</span></div>
+          <div class="gl-row"><span class="gl-term">stop tokens / sequences</span><span class="gl-def">strings that tell generation to end.</span></div>
+        </div>
+
+        <h2 class="sec">Interview-readiness recap</h2>
+        <div class="qa">
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>What is a chat template and why does it matter?</summary><div class="q-body"><p>It's the rule that converts structured role-based messages into the exact special-token string the model was trained on. Wrong formatting confuses the model — it ignores the system prompt, rambles, or won't stop. Different model families use different templates, so it must match exactly.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>A self-hosted model gives garbled output — what do you suspect?</summary><div class="q-body"><p>Wrong chat template for that model, or a tokenizer mismatch — special tokens missing or from the wrong family. Fix: apply the model's exact template (or use an API that applies it), and confirm the tokenizer matches the model.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>A model won't stop generating / starts talking as the user — why?</summary><div class="q-body"><p>A hand-built prompt is missing the end-of-turn token or the assistant-turn header, or <span class="k">stop</span> isn't set. Best fix is to use the Chat Completions API so the server templates correctly; otherwise match the template and stop tokens.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Customer says the system prompt is being ignored — where do you look?</summary><div class="q-body"><p>How the prompt is assembled: is the system message placed where that model's template expects it? Some families fold system into the first user turn. Prefer the structured <span class="k">messages</span> API so the server handles placement.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>When does a customer even have to worry about templates?</summary><div class="q-body"><p>On the raw completions endpoint or when self-hosting, where they format the prompt themselves. On the Chat Completions API the server applies the template, so most template bugs go away — that's the recommendation.</p></div></details>
+        </div>
+
+        <h2 class="sec">Cheat-sheet</h2>
+        <div class="cheat">Model sees ONE token string, not "roles" — chat template renders messages → that string
+Special tokens mark turn/role boundaries; each model FAMILY differs, must match EXACTLY
+Llama 3: &lt;|start_header_id|&gt;role&lt;|end_header_id|&gt; … &lt;|eot_id|&gt;
+ChatML (Qwen etc.): &lt;|im_start|&gt;role … &lt;|im_end|&gt;   |   Mistral: [INST] … [/INST]
+Chat Completions API → server applies template (USE THIS)
+Raw completions / self-host → YOU format it → main source of template bugs
+Won't stop / answers as user → missing end-of-turn token or stop seq
+System prompt ignored → wrong placement for that family
+Garbled output / literal special tokens → wrong template or tokenizer mismatch
+Multi-turn "memory" = client RESENDS full message list each call</div>
+
+        <button class="read-toggle" data-read="J"><span class="box">✓</span>Mark this module as studied</button>
+        <div class="foot-nav">
+          <button class="foot-btn" data-go="I"><span class="dir">Previous</span>← I · LLM Behaviour & Errors</button>
+          <button class="foot-btn next" data-go="K"><span class="dir">Next</span>K · Performance & Config →</button>
+        </div>
+      </section>
+
+      <section class="module m-K" data-mod="K">
+        <div class="mod-head">
+          <div class="mod-badge">K</div>
+          <div><h1>Model Performance, Deployment &amp; Config</h1><div class="mod-sub">The knobs, and what each one breaks</div></div>
+        </div>
+        <div class="why"><div class="lbl">Why it matters</div>When a customer asks "why is it slow / expensive / low quality, and what should I change?", this is the module that answers. It's the knobs (sampling + token params), the deployment choices (serverless vs dedicated), and the optimizations (quantization, context length, parallelism) — the levers you'll actually recommend in tickets and in the Forge scenario.</div>
+
+        <h2 class="sec">Concepts</h2>
+
+        <h3 class="cpt">K1 · The generation parameters (the knobs customers get wrong)</h3>
+        <p>These control <b>output behaviour</b>, not speed of the hardware. Know what each does and its failure mode:</p>
+        <ul><li><b>temperature</b> — randomness. <span class="k">0</span> = (near) deterministic, focused; higher (0.7–1.0+) = more creative/varied. Too high → rambling, off-topic, hallucination-prone. "Answers are inconsistent" → lower it. "Answers are robotic/repetitive" → raise it slightly.</li><li><b>top_p (nucleus sampling)</b> — restrict choices to the smallest set of tokens whose probability sums to p (e.g. 0.9). Another diversity control; usually tune temperature <i>or</i> top_p, not both hard.</li><li><b>top_k</b> — restrict to the k most likely tokens. Similar purpose.</li><li><b>max_tokens</b> — cap on <b>output</b> length. Too low → truncated answers (<span class="k">finish_reason: length</span>). Too high → slower and more expensive, and risks exceeding the context window.</li><li><b>stop / stop sequences</b> — strings that force generation to end. Misused → empty or cut-off output.</li><li><b>repetition / frequency / presence penalty</b> — discourage repeating tokens. Helps with loops/ramble; too high → unnatural, avoids necessary words.</li><li><b>seed</b> — if supported, fixes the random draw so results are reproducible (pair with <span class="k">temperature=0</span>).</li></ul>
+        <p>Support reflex: <b>quality/consistency complaints usually trace to these params before any infrastructure.</b></p>
+
+        <h3 class="cpt">K2 · Latency anatomy (what "slow" actually means)</h3>
+        <p>Split every latency complaint into two numbers (ties to Module A/C):</p>
+        <ul><li><b>Time to first token (TTFT)</b> — how long until the first token appears. Driven by <b>prefill</b> (processing the input), queueing, and cold start. Long prompt or cold/queued endpoint → slow TTFT.</li><li><b>Time per output token / total generation time</b> — driven by <b>decode</b>, one token at a time. Long outputs and bigger models → slower overall.</li></ul>
+        <p>So: <b>long input → slow first token; long output → slow overall.</b> The fixes differ — shorten prompt vs cap <span class="k">max_tokens</span>/pick a faster model. <b>Streaming</b> hides TTFT-plus-decode by showing tokens as they come; it doesn't make total time shorter but massively improves perceived speed.</p>
+
+        <h3 class="cpt">K3 · Serverless vs Dedicated deployment</h3>
+        <p>The core deployment decision you'll explain constantly:</p>
+        <ul><li><b>Serverless / shared</b> — pay per token, instant to start, elastic, no ops. But shared capacity means possible queueing under load, noisy neighbours, and cold starts after idle. Best for spiky/low/medium or getting started.</li><li><b>Dedicated endpoint</b> — reserved GPUs for one customer. Consistent low latency, no noisy neighbours, higher and predictable throughput, ability to keep the model warm. You pay for reserved capacity (including idle) and must size it. Best for steady high volume, strict latency SLAs, or predictable cost at scale.</li></ul>
+        <p>The recommendation logic: <b>spiky/uncertain/low volume → serverless; steady high volume or latency-sensitive → dedicated.</b> This is the exact tradeoff (opex-per-token vs reserved-capacity) from the token-economics discussion — and a very likely Forge prompt.</p>
+
+        <h3 class="cpt">K4 · Quantization (the big performance/cost lever)</h3>
+        <p><b>Quantization</b> stores model weights at lower numeric precision — <b>FP16/BF16 (16-bit)</b> → <b>FP8 (8-bit)</b> → <b>INT4 (4-bit)</b> and formats like <b>AWQ/GPTQ</b>. Effects:</p>
+        <ul><li><b>Less VRAM</b> — a smaller footprint means the model fits on fewer/smaller GPUs and leaves more room for KV cache (bigger batches, longer context).</li><li><b>Faster + cheaper</b> — less data to move and compute, so higher throughput / lower cost.</li><li><b>Small quality cost</b> — aggressive quantization (INT4) can slightly degrade quality; well-done 8-bit is usually near-lossless.</li></ul>
+        <p>Support relevance: quantization is a lever for OOM ("use a quantized version to fit"), for cost/throughput, and it explains why "the same model" can behave slightly differently across providers/precisions.</p>
+
+        <h3 class="cpt">K5 · Context length &amp; KV cache in deployment</h3>
+        <p>The <b>context window</b> (max input + output tokens) is a per-model, per-deployment property. Longer context = more capability but <b>more VRAM for the KV cache</b> and higher latency/cost (link to Module C4). Serving choices — max context, max batch size, KV-cache memory — trade off how many concurrent/long requests a deployment can handle before OOM or queueing. "We can't send long documents" or "long requests OOM the endpoint" lands here.</p>
+
+        <h3 class="cpt">K6 · Scaling &amp; parallelism knobs (deployment config)</h3>
+        <ul><li><b>Replicas / autoscaling</b> — more replicas = more concurrent throughput; new replicas cold-start (Module B6).</li><li><b>Tensor parallelism (TP)</b> — split one big model across GPUs so it fits / runs faster; needs fast GPU-GPU interconnect (Module A6/C8).</li><li><b>Max batch size / concurrency</b> — higher = more throughput but more VRAM and potentially higher per-request latency (the latency-vs-throughput trade, Module C2).</li><li><b>Keep-warm / min replicas</b> — avoids cold starts for latency-sensitive dedicated endpoints, at the cost of paying for idle.</li></ul>
+
+        <h3 class="cpt">K7 · The optimization playbook (what you recommend)</h3>
+        <p>When a customer wants <b>faster / cheaper / better</b>, reach for these in order:</p>
+        <ul><li><b>Faster/cheaper:</b> smaller or quantized model → cap <span class="k">max_tokens</span> → stream → right-size or dedicate capacity → increase batch/concurrency (throughput) → shorten prompts.</li><li><b>More consistent/higher quality:</b> lower <span class="k">temperature</span> (+ seed) → tighten the prompt/system message → add repetition penalty for loops → move up a model tier only if needed → ground with retrieval for factuality.</li><li><b>Fitting bigger models / longer context:</b> quantize → tensor parallelism → longer-context model → manage KV-cache/batch settings.</li></ul>
+
+        <h2 class="sec">Glossary</h2>
+        <div class="glossary">
+          <div class="gl-row"><span class="gl-term">temperature / top_p / top_k</span><span class="gl-def">sampling knobs controlling randomness/diversity.</span></div>
+          <div class="gl-row"><span class="gl-term">max_tokens</span><span class="gl-def">output length cap; too low = truncation, too high = slow/expensive.</span></div>
+          <div class="gl-row"><span class="gl-term">TTFT</span><span class="gl-def">time to first token (prefill + queue + cold start); vs total generation (decode).</span></div>
+          <div class="gl-row"><span class="gl-term">Serverless vs Dedicated</span><span class="gl-def">shared pay-per-token vs reserved capacity for one customer.</span></div>
+          <div class="gl-row"><span class="gl-term">Quantization (FP16→FP8→INT4, AWQ/GPTQ)</span><span class="gl-def">lower precision → less VRAM, faster, small quality cost.</span></div>
+          <div class="gl-row"><span class="gl-term">Context window</span><span class="gl-def">max input+output tokens; longer costs more VRAM/latency.</span></div>
+          <div class="gl-row"><span class="gl-term">Tensor parallelism / replicas</span><span class="gl-def">split one model across GPUs / run more copies for throughput.</span></div>
+        </div>
+
+        <h2 class="sec">Interview-readiness recap</h2>
+        <div class="qa">
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Customer says inference is too slow — how do you approach it?</summary><div class="q-body"><p>Split into TTFT vs total generation. Long input → slow first token (shorten prompt, warm/dedicated endpoint, check queue/cold start). Long output → slow overall (cap <span class="k">max_tokens</span>, smaller/faster or quantized model, stream). Confirm whether it's queueing/saturation vs the model itself.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>When do you recommend a dedicated endpoint over serverless?</summary><div class="q-body"><p>Steady high volume, strict/consistent latency needs, or predictable cost at scale — dedicated gives reserved capacity, no noisy neighbours, and keep-warm. Serverless for spiky, low/uncertain, or getting-started workloads where pay-per-token and elasticity win.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>A model OOMs on an endpoint — what config levers help?</summary><div class="q-body"><p>Reduce batch size, lower max context / <span class="k">max_tokens</span>, use a quantized version to shrink the footprint, or add tensor parallelism / a bigger GPU. Quantization and batch/context sizing are the fastest wins.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>What is quantization and what's the tradeoff?</summary><div class="q-body"><p>Storing weights at lower precision (FP16→FP8→INT4). Less VRAM, faster, cheaper; aggressive 4-bit can slightly reduce quality while good 8-bit is near-lossless. It's a key lever for fitting models and cutting cost/latency.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Customer's outputs are inconsistent / rambling — which settings?</summary><div class="q-body"><p>Lower <span class="k">temperature</span> (and set a <span class="k">seed</span> for reproducibility), consider <span class="k">top_p</span>, add a repetition penalty for loops, and tighten the prompt. These sampling knobs, not the hardware, drive consistency.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>Responses are getting cut off — why?</summary><div class="q-body"><p>Hitting <span class="k">max_tokens</span> (<span class="k">finish_reason: length</span>) or a stop sequence firing early. Raise <span class="k">max_tokens</span> (within the context window) and check <span class="k">stop</span> settings.</p></div></details>
+        </div>
+
+        <h2 class="sec">Cheat-sheet</h2>
+        <div class="cheat">Sampling: temperature (0=focused, high=creative/ramble) | top_p/top_k (diversity) | seed (repeatable)
+max_tokens = OUTPUT cap → too low = truncated (finish_reason: length), too high = slow/$$
+Latency = TTFT (prefill+queue+cold start; long INPUT) + generation (decode; long OUTPUT)
+Streaming = better perceived latency, same total time
+Serverless = pay/token, elastic, cold starts, noisy neighbours | Dedicated = reserved, consistent, keep-warm, pay idle
+Rule: spiky/low/uncertain → serverless | steady-high/latency-strict → dedicated
+Quantization FP16→FP8→INT4 (AWQ/GPTQ): less VRAM, faster, cheaper, small quality cost → fixes OOM/cost
+Longer context = more VRAM (KV cache) + slower; batch size ↑ = throughput ↑ but VRAM ↑
+Fit bigger/longer: quantize → tensor parallelism → longer-context model
+Faster/cheaper: smaller/quantized model → cap max_tokens → stream → dedicate/right-size → shorten prompt</div>
+
+        <button class="read-toggle" data-read="K"><span class="box">✓</span>Mark this module as studied</button>
+        <div class="foot-nav">
+          <button class="foot-btn" data-go="J"><span class="dir">Previous</span>← J · Chat Templates</button>
+          <button class="foot-btn next" data-go="L"><span class="dir">Next</span>L · Forge Rounds →</button>
+        </div>
+      </section>
+
+      <section class="module m-L" data-mod="L">
+        <div class="mod-head">
+          <div class="mod-badge">L</div>
+          <div><h1>The Together Forge Rounds</h1><div class="mod-sub">Scenario playbook for your two Forge interviews</div></div>
+        </div>
+        <div class="why"><div class="lbl">Why it matters</div>Your two Forge rounds — the 45-min <b>Technical Exercise</b> with Joseph Chambers and the 30-min <b>Collaboration</b> round with Ryan Lucchese — are <b>use-case / scenario based</b>. You're given a situation and evaluated on <i>how you solve it</i>, and you're <b>allowed to use AI and make assumptions</b>. That changes the game: they are not testing recall (you can look things up) — they're testing your <b>problem-solving process, communication, and judgment under realistic ambiguity.</b> This module is your operating manual for those rounds.</div>
+
+        <h2 class="sec">Concepts</h2>
+
+        <h3 class="cpt">L1 · What they're really evaluating</h3>
+        <ul><li><b>Structured thinking</b> — do you break the problem down instead of guessing?</li><li><b>Diagnostic instinct</b> — do you ask the right narrowing questions and form hypotheses?</li><li><b>Communication</b> — do you narrate your reasoning so they can follow it? (Especially the Collaboration round.)</li><li><b>Judgment with ambiguity</b> — do you state assumptions explicitly and move forward, rather than freezing?</li><li><b>Effective AI use</b> — can you use AI as a <i>tool</i> well: ask it good questions, verify its output, not blindly trust it?</li><li><b>Customer empathy</b> — do you think about the person on the other end (mitigate first, communicate clearly)?</li></ul>
+
+        <h3 class="cpt">L2 · How to use "you can use AI + make assumptions" well</h3>
+        <p>This permission is a signal — use it deliberately and out loud:</p>
+        <ul><li><b>Narrate assumptions:</b> "I'll assume this is a serverless endpoint and traffic just spiked — I'd confirm with the customer, but I'll proceed on that." This shows judgment even when you don't have full info.</li><li><b>Use AI as a co-pilot, not an oracle:</b> "I'd use AI to draft a token-counting script / recall this error's meaning, then I'd verify against the actual error body and docs." Show you <i>check</i> AI output — verifying is the senior signal.</li><li><b>Don't outsource the thinking:</b> lead with your own structured approach; use AI to accelerate specifics (syntax, a script, an edge case), not to replace your reasoning.</li><li><b>State tradeoffs:</b> every recommendation should name what you're trading (cost vs latency, quality vs speed).</li></ul>
+
+        <h3 class="cpt">L3 · The universal scenario framework (say it out loud)</h3>
+        <p>Whatever the scenario, run this loop — it's the whole guide compressed:</p>
+        <ol><li><b>Clarify &amp; scope</b> — restate the problem, ask (or assume, stated) key unknowns: isolated or systemic? what changed? which model/endpoint/region?</li><li><b>Reproduce / gather signal</b> — <span class="k">curl</span> the endpoint, read the exact status code + error body, check metrics/logs.</li><li><b>Hypothesize by layer</b> — walk the path: auth → rate limit → request validity/tokens → queue/cold start → generation → streaming/network → GPU/infra. Name the top 2–3 suspects.</li><li><b>Test the cheapest hypothesis first</b> — narrow fast.</li><li><b>Mitigate, then root-cause</b> — stop customer pain first (retry, fallback, lower <span class="k">max_tokens</span>, dedicate capacity), then explain the fix.</li><li><b>Communicate</b> — what you found, what you did, what the customer should do, how to prevent recurrence.</li></ol>
+
+        <h3 class="cpt">L4 · Worked example (how to talk through one)</h3>
+        <p><b>Scenario:</b> "A customer reports inference latency jumped from ~300ms to 6s and some requests 504. GPU dashboards show ~95% utilization. No deploy on their side. Traffic rose after their product launch."</p>
+        <p><b>How to answer:</b> "First, I'd scope it — this looks systemic and correlates with a traffic increase, so my leading hypothesis is <b>saturation</b>: arrival rate now exceeds what the endpoint serves, so requests queue and the tail 504s. GPU at 95% with rising latency supports that — the GPU isn't broken, it's saturated. I'd confirm by checking queue length/TTFT and whether it's all requests or just the tail. Assuming it's a shared/serverless endpoint, the fastest mitigations are: add capacity or move them to a <b>dedicated endpoint</b> sized for the new baseline, cap <span class="k">max_tokens</span> to shorten decode, and enable streaming to improve perceived latency and reduce timeouts. Root cause: capacity under new load, not a bug. I'd communicate the mitigation, then right-size for their launch volume. I'd use AI to quickly sanity-check my capacity math, but verify against their actual token/traffic numbers." That answer shows scoping, the util-fork insight, assumptions stated, mitigate-then-RCA, tradeoffs, and disciplined AI use.</p>
+
+        <h3 class="cpt">L5 · Scenario bank to rehearse (out loud, timed)</h3>
+        <ul><li>Latency spike with high GPU util (saturation) — <i>above.</i></li><li>Latency spike with <b>low</b> GPU util (starvation: batching off, CPU/network/storage feeding bottleneck).</li><li>Customer getting 429s during peak — rate limits vs overload; backoff, spread, dedicate.</li><li>"context length exceeded" on long documents — token budget, trim, longer-context model.</li><li>Outputs inconsistent / low quality after "no change" — sampling params, prompt diff, model version/deprecation.</li><li>Streaming connection drops — proxy buffering / client timeout, not the model.</li><li>Self-hosted model gives garbled output — chat template / tokenizer mismatch (Module J).</li><li>Model OOMs on the endpoint — batch/context sizing, quantization, tensor parallelism.</li><li>"Which deployment should we use?" — serverless vs dedicated tradeoff (Module K3).</li><li>Sudden 404s on API calls — deprecated model name.</li></ul>
+
+        <h3 class="cpt">L6 · Collaboration-round specifics (Ryan Lucchese, 30 min)</h3>
+        <p>The Collaboration round weights <i>how you work with people</i> as much as the technical answer. Extra behaviours to show:</p>
+        <ul><li><b>Think out loud</b> — make your reasoning visible; invite input ("does that match what you're seeing?").</li><li><b>Ask before assuming</b> where a real teammate would — then state the assumption if you proceed.</li><li><b>Be coachable</b> — if they nudge or add info, incorporate it gracefully; don't defend a wrong path.</li><li><b>Structure the conversation</b> — summarize, propose next step, check alignment. Treat it like pairing on a real incident.</li><li><b>Customer + teammate empathy</b> — frame fixes around impact and clear communication, not just technical correctness.</li></ul>
+
+        <h2 class="sec">Cheat-sheet</h2>
+        <div class="cheat">They test PROCESS, not recall (you can use AI + assume) → narrate your reasoning
+Framework: clarify/scope → reproduce/get signal → hypothesize by layer → test cheapest → MITIGATE then RCA → communicate
+State assumptions OUT LOUD ("I'll assume serverless + traffic spike, would confirm")
+Use AI as co-pilot: draft/recall fast, then VERIFY against error body/docs (verifying = senior signal)
+Every recommendation names a TRADEOFF (cost vs latency, quality vs speed)
+Path to walk: auth → rate limit → request/tokens → queue/cold start → generation → streaming/net → GPU
+Util fork: high+slow = saturation (add capacity) | low+slow = starvation (feeding bottleneck)
+Collaboration round: think aloud, ask, be coachable, summarize + check alignment, show empathy</div>
+
+        <button class="read-toggle" data-read="L"><span class="box">✓</span>Mark this module as studied</button>
+        <div class="foot-nav">
+          <button class="foot-btn" data-go="K"><span class="dir">Previous</span>← K · Performance & Config</button>
+          <button class="foot-btn next" data-go="M"><span class="dir">Next</span>M · nvidia-smi →</button>
+        </div>
+      </section>
+
+      <section class="module m-M" data-mod="M">
+        <div class="mod-head">
+          <div class="mod-badge">M</div>
+          <div><h1>nvidia-smi: Reading the GPU</h1><div class="mod-sub">The first command you run on a GPU node</div></div>
+        </div>
+        <div class="why"><div class="lbl">Why it matters</div>When a customer says "the GPU is slow / crashing / not being used," <span class="k">nvidia-smi</span> is the <b>very first command you run on the node</b> to see ground truth. It talks directly to the NVIDIA driver and GPU and answers the questions every other module raises: <i>Is the GPU even visible? How full is VRAM? Is it actually busy? What's running on it? Is it too hot or power-throttled?</i>  If you can read an <span class="k">nvidia-smi</span> table out loud and say what's wrong, you've proven the single most practical GPU-support skill. Expect the interviewer to paste an output and ask "what do you see?"</div>
+
+        <h2 class="sec">Concepts</h2>
+
+        <h3 class="cpt">M1 · What nvidia-smi is</h3>
+        <p><b>nvidia-smi</b> (NVIDIA System Management Interface, also called NVSMI) is a command-line tool for monitoring, managing, and diagnosing NVIDIA GPUs (Tesla, Quadro, GRID, GeForce). It ships with the driver and can monitor performance/temperature/utilization, manage power/clocks/ECC, control persistence and compute modes, and emit machine-readable metrics for automation.  Mental model: it's <span class="k">top</span> (or <span class="k">kubectl get</span>) but for the GPU.</p>
+
+        <h3 class="cpt">M2 · Reading the default output (this is the interview question)</h3>
+        <p>Running plain <span class="k">nvidia-smi</span> prints two tables.  <b>Table 1</b> describes each GPU; <b>Table 2</b> lists the processes using them.</p>
+        <p>Table 1 — the fields you must be able to interpret on sight:</p>
+        <ul><li><b>GPU / Name / Bus-Id</b> — the GPU index (0,1,2… — matters on multi-GPU nodes), model name, and PCI address (<span class="k">domain:bus:device.function</span>) used to target one device.</li><li><b>Temp</b> — core temperature in °C. Normal is fine; ~90 °C+ is a red flag for thermal throttling. (In a managed cloud the datacenter handles cooling, but you still watch it.)</li><li><b>Perf</b> — performance state <b>P0 (max) → P12 (min)</b>. A GPU that should be working but sits at a low-power P-state is a clue.</li><li><b>Persistence-M</b> — persistence mode On/Off. <b>On</b> keeps the driver loaded even with no active client, which cuts startup latency for CUDA apps — relevant to cold-start/first-request-slow tickets.</li><li><b>Pwr:Usage/Cap</b> — current power draw vs the cap, in Watts. Near the cap = possible power throttling.</li><li><b>Memory-Usage</b> — <b>VRAM used / total</b>. This is the number for OOM debugging (Module A3). Note: frameworks like TensorFlow/Keras grab <i>all</i> VRAM on launch by default, so "memory full" doesn't always mean genuinely used — a classic false alarm.</li><li><b>GPU-Util</b> — <b>percent of time the GPU was running kernels</b> over the sample window. This is the low-vs-high fork from Module H: low util with traffic = the GPU is <i>starved</i> (data/CPU/network/storage bottleneck feeding it, e.g., slow disk reads of mini-batches); high util = it's actually busy/saturated. Crucial caveat: GPU-Util is <i>time-busy</i>, not <i>how fully the cores are used</i> — it can read 100% while the GPU is only lightly loaded.</li><li><b>Volatile Uncorr. ECC</b> — count of uncorrectable ECC memory errors since the driver loaded. Non-zero = suspect failing GPU memory (hardware).</li><li><b>Compute M.</b> — compute mode (see M6); "Default" allows multiple processes to share the GPU.</li></ul>
+        <p>Table 2 — per-process: <b>GPU index</b>, <b>PID</b>, <b>Type</b> (<span class="k">C</span>=Compute, <span class="k">G</span>=Graphics, <span class="k">C+G</span>=both), <b>Process Name</b>, and <b>GPU Memory Usage</b> per process. This tells you <i>which process owns the VRAM</i> — essential when a leftover/zombie process is hogging memory and blocking a new model from loading.</p>
+
+        <h3 class="cpt">M3 · The commands you'll actually use in support</h3>
+        <p>General inspection:</p>
+        <pre class="code">nvidia-smi                 # the two-table summary (start here)
+nvidia-smi -L              # list all GPUs with their UUIDs
+nvidia-smi -q              # full detailed dump for all GPUs
+nvidia-smi -i 0 -q         # detailed dump for GPU index 0 only
+nvidia-smi -q -d ECC       # just one category (ECC, TEMPERATURE, PERFORMANCE, PCI, FAN...)
+nvidia-smi topo -m         # GPU-to-GPU topology (PCIe/NVLink) — matters for tensor parallelism</pre>
+        <p>Continuous / live monitoring (watch a problem as it happens):</p>
+        <pre class="code">nvidia-smi -l 5                              # refresh every 5 seconds
+nvidia-smi -lms 500                          # refresh every 500 ms
+nvidia-smi --filename=/var/log/gpu.log -l 5  # log to a file while looping
+nvidia-smi dmon                              # scrolling device monitor (pwr, temp, sm%, mem%, clocks)
+watch -n 2 nvidia-smi                        # simple alternative refresh</pre>
+        <p>Process monitoring (find and kill the memory hog):</p>
+        <pre class="code">nvidia-smi pmon -c 1     # one sample of per-process GPU usage
+nvidia-smi pmon          # continuous per-process monitor
+sudo kill -9 &lt;pid&gt;       # terminate a stuck/leftover process holding VRAM</pre>
+
+        <h3 class="cpt">M4 · Scripting nvidia-smi (<span class="k">--query-gpu</span> + <span class="k">--format=csv</span>)</h3>
+        <p>For dashboards, alerts, or a quick diagnostic script, use structured queries instead of parsing the pretty table.</p>
+        <pre class="code"># Pick exactly the fields you want, machine-readable:
+nvidia-smi --query-gpu=index,name,temperature.gpu,utilization.gpu,memory.used,memory.total \
+  --format=csv
+
+# For scripts, strip headers and units so the numbers parse cleanly:
+nvidia-smi --query-gpu=temperature.gpu,power.draw --format=csv,noheader,nounits</pre>
+        <p>Common query fields worth knowing: <b>identity</b> (<span class="k">index,name,uuid,serial</span>), <b>performance</b> (<span class="k">utilization.gpu,utilization.memory,pstate</span>), <b>memory</b> (<span class="k">memory.total,memory.used,memory.free</span>), <b>temperature</b> (<span class="k">temperature.gpu</span>), <b>power</b> (<span class="k">power.draw,power.limit</span>), <b>driver</b> (<span class="k">driver_version</span>).  Automation tips: prefer <span class="k">--format=csv,noheader,nounits</span>, and use <b>GPU UUIDs</b> (not indexes) for stable identification across reboots.</p>
+        <p>A minimal logging loop you could sketch in an interview:</p>
+        <pre class="code">#!/bin/bash
+LOG="/var/log/gpu_monitor.csv"
+echo "timestamp,index,uuid,util,mem_used,mem_total,temp,power" &gt; "$LOG"
+while true; do
+  nvidia-smi --query-gpu=timestamp,index,uuid,utilization.gpu,memory.used,memory.total,temperature.gpu,power.draw \
+    --format=csv,noheader &gt;&gt; "$LOG"
+  sleep 5
+done</pre>
+
+        <h3 class="cpt">M5 · Management commands (know they exist; use with care)</h3>
+        <p>These change GPU state and usually need <span class="k">sudo</span>. You're unlikely to run them casually in prod, but interviewers like to hear you know them:</p>
+        <pre class="code">sudo nvidia-smi -pm 1                     # enable persistence mode (faster CUDA startup)
+sudo nvidia-smi -pl 250                   # set power limit to 250 W
+sudo nvidia-smi --lock-gpu-clocks=900,1500# pin GPU clocks (benchmarks/repro)
+sudo nvidia-smi --reset-gpu-clocks        # undo the lock
+sudo nvidia-smi -i 0 --gpu-reset          # reset GPU 0 (only if no processes are using it)</pre>
+
+        <h3 class="cpt">M6 · ECC and Compute Mode</h3>
+        <p><b>ECC</b> (Error Correction Code) detects and corrects GPU-memory errors; check it with <span class="k">nvidia-smi -q -d ECC</span> and watch the uncorrectable count — rising errors mean suspect hardware.  <b>Compute Mode</b> controls sharing: <b>0 Default</b> (multiple processes share the GPU), <b>1 Exclusive-thread</b>, <b>2 Prohibited</b>, <b>3 Exclusive-process</b>; set with <span class="k">sudo nvidia-smi -c &lt;mode&gt;</span>.  If a customer says "only one job can use the GPU at a time," a non-Default compute mode is a prime suspect.</p>
+
+        <h3 class="cpt">M7 · Common nvidia-smi failures and what they mean</h3>
+        <ul><li><b>"NVIDIA-SMI has failed because it couldn't communicate with the NVIDIA driver"</b> → the driver isn't loaded / is mismatched — reload or reinstall it.  This is the command-line face of Module A2's "driver/CUDA not healthy" branch, and inside K8s it maps to the device plugin seeing zero GPUs (Module B3).</li><li><b>Insufficient permissions</b> → management commands need <span class="k">sudo</span>.</li><li><b>GPU reset not supported</b> → some cards/instances don't allow reset.</li><li><b>Compute-mode change didn't stick</b> → may require a reboot to persist.</li></ul>
+
+        <h2 class="sec">Glossary</h2>
+        <div class="glossary">
+          <div class="gl-row"><span class="gl-term">nvidia-smi / NVSMI</span><span class="gl-def">CLI to monitor and manage NVIDIA GPUs via the driver.</span></div>
+          <div class="gl-row"><span class="gl-term">GPU-Util</span><span class="gl-def">% of <i>time</i> the GPU ran kernels (time-busy, not core-fullness); low+traffic = starved.</span></div>
+          <div class="gl-row"><span class="gl-term">Memory-Usage</span><span class="gl-def">VRAM used/total; the OOM number (beware frameworks pre-allocating all VRAM).</span></div>
+          <div class="gl-row"><span class="gl-term">Perf state (P0–P12)</span><span class="gl-def">max→min power/performance state.</span></div>
+          <div class="gl-row"><span class="gl-term">Persistence mode</span><span class="gl-def">keep the driver loaded to cut CUDA startup latency.</span></div>
+          <div class="gl-row"><span class="gl-term">Pwr:Usage/Cap</span><span class="gl-def">power draw vs cap; near cap = throttling risk.</span></div>
+          <div class="gl-row"><span class="gl-term">ECC (Volatile Uncorr.)</span><span class="gl-def">GPU-memory error count; non-zero = suspect hardware.</span></div>
+          <div class="gl-row"><span class="gl-term">Compute mode</span><span class="gl-def">how many processes may share a GPU (Default vs Exclusive/Prohibited).</span></div>
+          <div class="gl-row"><span class="gl-term"><span class="k">--query-gpu</span> + <span class="k">--format=csv</span></span><span class="gl-def">structured output for scripts/dashboards.</span></div>
+          <div class="gl-row"><span class="gl-term">pmon / dmon</span><span class="gl-def">per-process / per-device continuous monitors.</span></div>
+        </div>
+
+        <h2 class="sec">Interview-readiness recap</h2>
+        <div class="qa">
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>What's the first thing you run on a GPU node when something's wrong?</summary><div class="q-body"><p><span class="k">nvidia-smi</span> — confirm the GPU is visible, check VRAM used/total, GPU-Util, temperature/power, and which processes hold memory. If the command itself errors, it's a driver problem.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>nvidia-smi shows GPU-Util 100% but the customer says it's slow — what does that mean?</summary><div class="q-body"><p>GPU-Util is <i>time-busy</i>, not how fully the cores are loaded; it can read 100% while lightly used. Combine with throughput/latency and batching — likely saturation or inefficient batching, not proof the GPU is maxed.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>nvidia-smi shows VRAM almost full but low utilization — interpret it.</summary><div class="q-body"><p>Memory is allocated but the GPU isn't doing work: a framework pre-allocated all VRAM (TF/Keras), or a leftover/zombie process holds memory. Check Table 2 for the PID and <span class="k">kill -9</span> it if orphaned.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>How do you find what's using the GPU's memory?</summary><div class="q-body"><p>The process table in <span class="k">nvidia-smi</span> (or <span class="k">nvidia-smi pmon</span>) — read PID/type/process name/mem, then terminate the offending PID if it's stale.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>nvidia-smi returns 'couldn't communicate with the NVIDIA driver' — what now?</summary><div class="q-body"><p>Driver not loaded or version-mismatched: reload/reinstall the driver; in K8s this is why the device plugin advertises zero GPUs and pods stay Pending.</p></div></details>
+          <details class="q"><summary><span class="chev">▶</span><span class="qmark">Q</span>How would you log GPU metrics for a dashboard?</summary><div class="q-body"><p><span class="k">--query-gpu=...</span> with <span class="k">--format=csv,noheader,nounits</span> in a loop (or feed DCGM→Prometheus, Module H), keyed by GPU UUID for stability.</p></div></details>
+        </div>
+
+        <h2 class="sec">Cheat-sheet</h2>
+        <div class="cheat">nvidia-smi = first command on a GPU node. Two tables: [1] GPUs  [2] processes.
+Read fast: Memory-Usage (VRAM=OOM) | GPU-Util (time-busy) | Temp | Pwr:Usage/Cap | Perf(P0..P12)
+GPU-Util LOW + traffic  → GPU STARVED (data/CPU/net/storage feeding it)  [ties Module H]
+VRAM full + Util low     → framework grabbed all VRAM, OR zombie PID holding memory (kill -9)
+Find the hog: process table / nvidia-smi pmon  → PID, type(C/G), mem
+Live watch: nvidia-smi -l 5  |  dmon  |  watch -n 2 nvidia-smi
+Scripts: nvidia-smi --query-gpu=index,util.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader,nounits
+Targeting: -i &lt;index&gt; | -L (UUIDs) | -q -d ECC/PCI/PERFORMANCE | topo -m (NVLink/PCIe)
+"couldn't communicate with the NVIDIA driver" → driver not loaded/mismatch (= K8s sees 0 GPUs)
+ECC uncorrectable &gt; 0 → suspect GPU memory hardware  |  Compute mode ≠ Default → only 1 proc can use GPU
+Mgmt (sudo): -pm 1 persistence | -pl &lt;W&gt; power cap | --gpu-reset (only if idle)</div>
+
+        <button class="read-toggle" data-read="M"><span class="box">✓</span>Mark this module as studied</button>
+        <div class="foot-nav">
+          <button class="foot-btn" data-go="L"><span class="dir">Previous</span>← L · Forge Rounds</button>
           <button class="foot-btn next" data-go="connect"><span class="dir">Next</span>Putting It Together →</button>
         </div>
       </section>
@@ -899,6 +1281,11 @@ const NAV = [
   {id:'F', tag:'F', label:'Networking', track:true},
   {id:'G', tag:'G', label:'Python & API Tools', track:true},
   {id:'H', tag:'H', label:'Observability', track:true},
+  {id:'I', tag:'I', label:'LLM Behaviour & Errors', track:true},
+  {id:'J', tag:'J', label:'Chat Templates', track:true},
+  {id:'K', tag:'K', label:'Performance & Config', track:true},
+  {id:'L', tag:'L', label:'Forge Rounds', track:true},
+  {id:'M', tag:'M', label:'nvidia-smi', track:true},
   {id:'connect', tag:'∞', label:'Putting It Together', track:false},
 ];
 const read = {};
